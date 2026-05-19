@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('vendas', function (Blueprint $table) {
             $table->id();
+            $table->date('data_venda');
+            $table->foreignId('usuario_id')->constrained('usuarios'); // Quem realizou a venda
+            $table->decimal('total', 10, 2)->nullable();
             $table->timestamps();
         });
     }

@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('compras', function (Blueprint $table) {
             $table->id();
+            $table->date('data_compra');
+            $table->foreignId('fornecedor_id')->constrained('fornecedores');
+            $table->decimal('total', 10, 2)->nullable();
             $table->timestamps();
         });
     }
