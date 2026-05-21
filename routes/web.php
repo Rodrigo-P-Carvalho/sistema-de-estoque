@@ -16,11 +16,7 @@ Route::middleware('auth')->group(function () {
     
     // Rota do painel principal
     Route::get('/dashboard', function () {
-        return '<h1>Bem-vindo ao estoque, ' . auth()->user()->name . '!</h1>
-                <form action="/sair" method="POST">
-                    '.csrf_field().'
-                    <button type="submit">Sair do Sistema</button>
-                </form>';
+        return view('dashboard'); // Agora aponta para um arquivo blade!
     })->name('dashboard');
 
     // Rota de logout
