@@ -33,6 +33,8 @@ Route::middleware('auth')->group(function () {
         return view('usuarios.create', compact('perfis'));
     })->name('usuarios.create');
 
+    Route::patch('/usuarios/primeira-senha', [UserController::class, 'salvarNovaSenha'])->name('usuarios.salvar-senha');
+
     Route::post('/usuarios/novo', [UserController::class, 'store'])->name('usuarios.store');
 
     // Rota de logout

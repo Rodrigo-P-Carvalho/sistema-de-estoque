@@ -26,10 +26,34 @@ class UserController extends Controller
             'email' => $dados['email'],
             'perfil_id' => $dados['perfil_id'],
             'password' => Hash::make($senhaTemporaria),
+            'primeiro_acesso' => true,
         ]);
 
         Mail::to($usuario->email)->send(new NovoUsuarioMail($usuario->name, $senhaTemporaria));
 
         return redirect()->route('usuarios.index');
+
+    }
+    public function salvarNovaSenha(Request $request)
+    {
+        // 1. Valida se a senha tem 8 caracteres e se a confirmação bate
+        $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'password.confirmed' => 'As senhas não são iguais.',
+            'password.min' => 'A senha deve ter pelo menos 8 caracteres.'
+        ]);
+
+        // 2. Pega o usuário que está logado
+        $user = auth()->user();
+
+        // 3. Atualiza a senha e desliga o aviso de primeiro acesso
+        $user->update([
+            'password' => Hash::make($request->password),
+            'primeiro_acesso' => false
+        ]);
+
+        // 4. Redireciona para o próprio dashboard, mas agora o pop-up não vai mais aparecer!
+        return redirect()->route('dashboard')->with('sucesso', 'Senha atualizada com sucesso!');
     }
 }

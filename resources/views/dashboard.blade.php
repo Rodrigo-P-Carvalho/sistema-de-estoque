@@ -108,6 +108,50 @@
             </div>
         </div>
     </main>
+    @if(auth()->user()->primeiro_acesso)
+    <!-- Fundo escuro bloqueando a tela (sem botão de fechar) -->
+    <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        
+        <!-- Caixinha do Pop-up -->
+        <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+            
+            <div class="mb-6 text-center">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800">Crie sua nova senha</h2>
+                <p class="text-sm text-slate-500 mt-2">Para sua segurança, você precisa alterar a senha temporária antes de continuar usando o sistema.</p>
+            </div>
+
+            <!-- Formulário -->
+            <form action="{{ route('usuarios.salvar-senha') }}" method="POST" class="space-y-4">
+                @csrf
+                @method('PATCH')
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nova Senha</label>
+                    <input type="password" name="password" required minlength="8"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Confirme a Nova Senha</label>
+                    <input type="password" name="password_confirmation" required minlength="8"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <!-- Mensagem de erro caso as senhas não batam -->
+                @error('password')
+                    <p class="text-red-500 text-sm">{{ $message }}</p>
+                @enderror
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors mt-6">
+                    Salvar e Acessar o Sistema
+                </button>
+            </form>
+        </div>
+    </div>
+@endif
 
 </body>
 </html>
