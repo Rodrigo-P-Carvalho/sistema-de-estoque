@@ -2,6 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
+use App\Models\Perfil;
+
 
 Route::get('/', function () {
     return view('test');
@@ -18,6 +21,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard'); // Agora aponta para um arquivo blade!
     })->name('dashboard');
+
+    Route::get('/usuarios', function () {
+        return view('usuarios.index');
+    })->name('usuarios.index');
+
+    // 2. Tela de criação de usuário (A que criamos no passo anterior)
+    Route::get('/usuarios/novo', function () {
+        $perfis = Perfil::all();
+
+        return view('usuarios.create', compact('perfis'));
+    })->name('usuarios.create');
+
+    Route::post('/usuarios/novo', [UserController::class, 'store'])->name('usuarios.store');
 
     // Rota de logout
     Route::post('/sair', [AuthController::class, 'sair'])->name('logout');
