@@ -39,7 +39,7 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-    public function perfil(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function perfil()
     {
         return $this->belongsTo(Perfil::class);
     }

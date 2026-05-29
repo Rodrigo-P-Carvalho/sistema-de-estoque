@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Perfil;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash; 
 use Illuminate\Support\Facades\Mail; 
 use App\Mail\NovoUsuarioMail; 
+
 
 class UserController extends Controller
 {
@@ -55,5 +57,33 @@ class UserController extends Controller
 
         // 4. Redireciona para o próprio dashboard, mas agora o pop-up não vai mais aparecer!
         return redirect()->route('dashboard')->with('sucesso', 'Senha atualizada com sucesso!');
+    }
+
+    public function lista(Request $request)
+    {
+        // Começamos a consulta e já pedimos para trazer a tabela de perfis junto (Eager Loading)
+        $query = User::with('perfil');
+
+        // 1. SISTEMA DE PESQUISA (Se o usuário digitou algo na busca)
+        if ($request->filled('busca')) {
+            $busca = $request->busca;
+            $query->where(function($q) use ($busca) {
+                $q->where('name', 'like', "%{$busca}%")
+                  ->orWhere('email', 'like', "%{$busca}%");
+            });
+        }
+
+        // 2. SISTEMA DE FILTRO (Se o usuário selecionou um perfil específico)
+        if ($request->filled('perfil_id')) {
+            $query->where('perfil_id', $request->perfil_id);
+        }
+
+        // Executamos a consulta pegando de 10 em 10 para criar a paginação
+        $usuarios = $query->paginate(10);
+        
+        // Pegamos todos os perfis para montar o campo do filtro
+        $perfis = Perfil::all(); 
+
+        return view('usuarios.lista', compact('usuarios', 'perfis'));
     }
 }

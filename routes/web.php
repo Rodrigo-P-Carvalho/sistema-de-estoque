@@ -37,6 +37,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/usuarios/novo', [UserController::class, 'store'])->name('usuarios.store');
 
+    Route::get('/usuarios/lista', [UserController::class, 'lista'])->name('usuarios.lista');
+
     // Rota de logout
     Route::post('/sair', [AuthController::class, 'sair'])->name('logout');
 
