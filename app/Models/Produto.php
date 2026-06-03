@@ -9,7 +9,6 @@ class Produto extends Model
 {
     use HasFactory;
 
-    // Usando a variável padrão do Laravel para proteção de dados
     protected $fillable = [
         'nome',
         'marca',
@@ -22,7 +21,6 @@ class Produto extends Model
         'localizacao',
     ];
 
-    // Garante que os números venham nos formatos corretos (ex: preços com 2 casas decimais)
     protected function casts(): array
     {
         return [
@@ -32,10 +30,7 @@ class Produto extends Model
         ];
     }
 
-    /**
-     * Helper prático para o RF04 (Alerta de Estoque)
-     * No seu Blade, você pode usar apenas: @if($produto->temEstoqueCritico())
-     */
+
     public function temEstoqueCritico(): bool
     {
         return $this->estoque <= $this->quantidade_minima;

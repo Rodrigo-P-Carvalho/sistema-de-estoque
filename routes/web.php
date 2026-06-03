@@ -4,14 +4,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProdutoController;
+use App\Http\Controllers\VendaController;
 use App\Models\Perfil;
 
 
 Route::get('/', function () {
-    return view('test');
+    return view('auth.login');
 });
 Route::get('/login', function () {
-    return view('auth.login'); // Aponta para resources/views/auth/login.blade.php
+    return view('auth.login'); 
 })->name('login');
 
 Route::post('/login', [AuthController::class, 'logar']);
@@ -42,8 +43,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/usuarios/lista', [UserController::class, 'lista'])->name('usuarios.lista');
 
 
-
+    // Produtos
     Route::get('/produtos', [ProdutoController::class, 'index'])->name('produtos.index');
+
+    //Vendas
+
+    Route::get('/vendas', [VendaController::class, 'index'])->name('vendas.index');
 
     // Rota de logout
     Route::post('/sair', [AuthController::class, 'sair'])->name('logout');

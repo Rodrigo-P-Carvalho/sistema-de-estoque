@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estoque de Peças - AutoPeças</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+@extends('layouts.app')
+
+@section('titulo_pagina', 'Produtos')
+
+@section('conteudo')
 <body class="bg-slate-50 min-h-screen p-8 font-sans">
 
     <div class="max-w-7xl mx-auto">
@@ -16,9 +13,6 @@
                 <p class="text-slate-500 text-sm mt-1">Controle de inventário, localizações e aplicações veiculares.</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('dashboard') }}" class="flex items-center gap-2 text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm text-sm">
-                    Voltar ao Dashboard
-                </a>
                 <a href="#" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm text-sm">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     Cadastrar Nova Peça
@@ -142,3 +136,4 @@
 
 </body>
 </html>
+@endsection
