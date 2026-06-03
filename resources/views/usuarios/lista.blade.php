@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Usuários - AutoPeças</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+@extends('layouts.app')
+
+@section('titulo_pagina', 'Usuários')
+
+@section('conteudo')
 <body class="bg-slate-50 min-h-screen p-8 font-sans">
 
     <div class="max-w-6xl mx-auto">
@@ -17,7 +14,7 @@
             </div>
             <a href="{{ route('usuarios.index') }}" class="flex items-center gap-2 text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Voltar ao Painel
+                Voltar ao painel de Usuário
             </a>
         </div>
 
@@ -111,3 +108,4 @@
 
 </body>
 </html>
+@endsection
