@@ -48,7 +48,10 @@ Route::middleware('auth')->group(function () {
 
     //Vendas
 
-    Route::get('/vendas', [VendaController::class, 'index'])->name('vendas.index');
+    Route::get('/vendas', [VendaController::class, 'exibirPagina'])->name('vendas.index');
+    Route::get('/api/vendas', [VendaController::class, 'index']);
+    Route::post('/api/vendas', [VendaController::class, 'store']);
+    Route::post('/api/vendas/{id}/devolver', [VendaController::class, 'devolver']);
 
     // Rota de logout
     Route::post('/sair', [AuthController::class, 'sair'])->name('logout');

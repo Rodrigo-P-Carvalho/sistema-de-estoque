@@ -9,14 +9,16 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('itens_devolucao', function (Blueprint $table) {
-            $table->foreignId('devolucao_id')->constrained('devolucoes')->onDelete('cascade');
-            $table->foreignId('produto_id')->constrained('produtos');
-            $table->integer('quantidade');
+            $table->id();
             
-            $table->primary(['devolucao_id', 'produto_id']);
+            $table->foreignId('devolucao_id')->constrained('devolucoes')->onDelete('cascade');
+            $table->foreignId('produto_id')->constrained('produtos')->onDelete('cascade');
+            
+            $table->integer('quantidade_devolvida');
+            
             $table->timestamps();
         });
     }

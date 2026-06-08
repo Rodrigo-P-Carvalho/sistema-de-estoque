@@ -68,67 +68,53 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">
-                        
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4 font-mono text-xs text-slate-500">
-                                <span class="block font-bold text-slate-700">#ALT-2041</span>
-                                <span>7891234567890</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="font-medium text-slate-800">Alternador 12V 90A</div>
-                                <div class="text-xs text-slate-400">Marca: Bosch</div>
-                            </td>
-                            <td class="px-6 py-4 text-xs">
-                                <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded">Fox 1.0 / Gol G6</span>
-                            </td>
-                            <td class="px-6 py-4 font-medium text-slate-700">Corredor A - Prateleira 3</td>
-                            <td class="px-6 py-4">
-                                <div class="text-slate-800 font-semibold">15 unidades</div>
-                                <div class="text-xs text-slate-400">Mínimo: 5</div>
-                            </td>
-                            <td class="px-6 py-4 font-medium text-slate-900">R$ 489,90</td>
-                            <td class="px-6 py-4 text-right space-x-2">
-                                <a href="#" class="text-blue-600 hover:text-blue-800 font-medium text-xs">Editar</a>
-                            </td>
-                        </tr>
-
-                        <tr class="bg-amber-50/40 hover:bg-amber-50 transition-colors">
-                            <td class="px-6 py-4 font-mono text-xs text-slate-500">
-                                <span class="block font-bold text-slate-700">#MOT-0912</span>
-                                <span>7890001112223</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="font-medium text-slate-800">Motor de Partida ZM</div>
-                                <div class="text-xs text-slate-400">Marca: ZM SA</div>
-                            </td>
-                            <td class="px-6 py-4 text-xs">
-                                <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded">Civic 1.8 2012+</span>
-                            </td>
-                            <td class="px-6 py-4 font-medium text-slate-700">Corredor C - Gaveta 12</td>
-                            <td class="px-6 py-4">
-                                <div class="text-red-600 font-bold flex items-center gap-1">
-                                    2 unidades
-                                    <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                                </div>
-                                <div class="text-xs text-amber-700 font-medium">Mínimo: 4 (Comprar!)</div>
-                            </td>
-                            <td class="px-6 py-4 font-medium text-slate-900">R$ 620,00</td>
-                            <td class="px-6 py-4 text-right space-x-2">
-                                <a href="#" class="text-blue-600 hover:text-blue-800 font-medium text-xs">Editar</a>
-                            </td>
-                        </tr>
-
-                        </tbody>
+    @forelse($produtos as $produto)
+        <tr class="hover:bg-slate-50 transition-colors {{ $produto->estoque <= $produto->quantidade_minima ? 'bg-amber-50/40 hover:bg-amber-50' : '' }}">
+            <td class="px-6 py-4 font-mono text-xs text-slate-500">
+                <span class="block font-bold text-slate-700">#{{ $produto->codigo_interno ?? 'N/A' }}</span>
+                <span>{{ $produto->codigo_barras ?? 'Sem cód. barras' }}</span>
+            </td>
+            <td class="px-6 py-4">
+                <div class="font-medium text-slate-800">{{ $produto->nome }}</div>
+                <div class="text-xs text-slate-400">Marca: {{ $produto->marca ?? 'Não informada' }}</div>
+            </td>
+            <td class="px-6 py-4 text-xs">
+                {{-- Se criar a coluna aplicacao_veicular no futuro, mostre-a aqui --}}
+                <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded">Geral</span>
+            </td>
+            <td class="px-6 py-4 font-medium text-slate-700">{{ $produto->localizacao ?? 'Não definida' }}</td>
+            <td class="px-6 py-4">
+                @if($produto->estoque <= $produto->quantidade_minima)
+                    <div class="text-red-600 font-bold flex items-center gap-1">
+                        {{ $produto->estoque }} unidades
+                        <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    </div>
+                    <div class="text-xs text-amber-700 font-medium">Mínimo: {{ $produto->quantidade_minima }} (Comprar!)</div>
+                @else
+                    <div class="text-slate-800 font-semibold">{{ $produto->estoque }} unidades</div>
+                    <div class="text-xs text-slate-400">Mínimo: {{ $produto->quantidade_minima }}</div>
+                @endif
+            </td>
+            <td class="px-6 py-4 font-medium text-slate-900">R$ {{ number_format($produto->preco, 2, ',', '.') }}</td>
+            <td class="px-6 py-4 text-right space-x-2">
+                <a href="#" class="text-blue-600 hover:text-blue-800 font-medium text-xs">Editar</a>
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="7" class="px-6 py-8 text-center text-slate-500">
+                Nenhum produto encontrado.
+            </td>
+        </tr>
+    @endforelse
+</tbody>
                 </table>
             </div>
 
             <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center text-xs text-slate-500">
-                <span>Mostrando 2 de 2 produtos cadastrados</span>
-                <div class="flex gap-1">
-                    <button class="px-3 py-1 border rounded bg-white text-slate-400 cursor-not-allowed">Anterior</button>
-                    <button class="px-3 py-1 border rounded bg-white text-slate-700 hover:bg-slate-50">Próximo</button>
+                <div class="w-full">
+                    {{ $produtos->appends(request()->query())->links() }}
                 </div>
-                {{-- {{ $produtos->links() }} --}}
             </div>
         </div>
 

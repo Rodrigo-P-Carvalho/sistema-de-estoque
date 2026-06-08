@@ -28,5 +28,8 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('senha123'), // Criptografa a senha "senha123"
             'perfil_id' => $perfilAdmin->id,
         ]);
+        $this->call([
+        ProdutoSeeder::class,
+        ]);
     }
 }

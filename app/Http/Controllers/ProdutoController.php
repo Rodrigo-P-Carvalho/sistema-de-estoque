@@ -11,26 +11,23 @@ class ProdutoController extends Controller
     {
         $query = Produto::query();
 
+        // 1. Filtro de Busca (Nome, Cód Interno ou Cód Barras)
         if ($request->filled('busca')) {
             $busca = $request->busca;
             $query->where(function($q) use ($busca) {
                 $q->where('nome', 'like', "%{$busca}%")
-                  ->orWhere('codigo_interno', 'like', "%{$busca}%")
-                  ->orWhere('codigo_barras', 'like', "%{$busca}%");
+                ->orWhere('codigo_interno', 'like', "%{$busca}%")
+                ->orWhere('codigo_barras', 'like', "%{$busca}%");
             });
         }
 
-        if ($request->filled('aplicacao')) {
-            $query->where('aplicacao_veicular', 'like', "%{$request->aplicacao}%");
-        }
-
+        // 2. Filtro de Estoque Baixo
         if ($request->has('estoque_baixo')) {
             $query->whereColumn('estoque', '<=', 'quantidade_minima');
         }
 
-        $produtos = Produto::whereHas('veiculos', function($query) {
-             $query->where('veiculos.id', 5); 
-         })->get();
+        // Traz os resultados ordenados pelo nome e pagina de 10 em 10
+        $produtos = $query->orderBy('nome')->paginate(10);
 
         return view('produtos.index', compact('produtos'));
     }

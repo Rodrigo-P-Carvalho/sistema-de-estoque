@@ -16,6 +16,7 @@
 
 <div x-data="{
     aba: 'novo_pedido',
+    vendasSalvas: [], // Histórico que virá do banco
     normalizarTexto(texto) {
         if (!texto) return '';
         return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
@@ -24,11 +25,12 @@
         let numero = Number(valor) || 0;
         return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },
+    
     // --- LÓGICA DE CLIENTES ---
     buscaCliente: '',
     mostrarDropdownCliente: false,
-    cliente: { telefone: '', email: '', cpf_cnpj: '', rg_ie: '', endereco: '', bairro: '', cidade: '', estado: '', cep: '' },
-    clientesDB: [],
+    cliente: { nome: '', telefone: '', email: '', cpf_cnpj: '', rg_ie: '', endereco: '', bairro: '', cidade: '', estado: '', cep: '' },
+    clientesDB: [], // Pode ser populado do banco futuramente
     get clientesFiltrados() {
         if(this.buscaCliente === '') return [];
         let busca = this.normalizarTexto(this.buscaCliente);
@@ -39,43 +41,98 @@
         this.cliente = { ...c };
         this.mostrarDropdownCliente = false;
     },
+
     // --- LÓGICA DE PRODUTOS E ITENS ---
     itens: [
-        { id: Date.now(), nome: '', qtd: '', valor: '', dropdown: false }
+        { id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false }
     ],
     adicionarItem() {
-        this.itens.push({ id: Date.now(), nome: '', qtd: '', valor: '', dropdown: false });
+        this.itens.push({ id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false });
     },
-    produtosDB: [],
+    // Aqui no futuro você puxa os produtos reais do banco!
+    produtosDB: [
+        { id: 1, nome: 'ALTERNADOR BOSCH 90A', valor: '450.00' },
+        { id: 2, nome: 'MOTOR DE PARTIDA VALEO', valor: '320.00' }
+    ],
     produtosFiltrados(busca) {
         if(busca === '') return [];
         let buscaNorm = this.normalizarTexto(busca);
-        return this.produtosDB.filter(p => this.normalizarTexto(p.nome).startsWith(buscaNorm));
+        return this.produtosDB.filter(p => this.normalizarTexto(p.nome).includes(buscaNorm));
     },
     selecionarProduto(index, prod) {
+        this.itens[index].produto_id = prod.id; // NOVO: Guarda o ID para o Backend
         this.itens[index].nome = prod.nome;
         this.itens[index].valor = prod.valor;
         this.itens[index].dropdown = false;
     },
+
     // --- LÓGICA DE MATEMÁTICA ---
     tipoDesconto: 'reais',
     valorDesconto: '',
     get subtotal() {
-        return this.itens.reduce((soma, item) => {
-            let q = Number(item.qtd) || 0;
-            let v = Number(item.valor) || 0;
-            return soma + (q * v);
-        }, 0);
+        return this.itens.reduce((soma, item) => soma + ((Number(item.qtd) || 0) * (Number(item.valor) || 0)), 0);
     },
     get totalFinal() {
         let sub = this.subtotal;
         let desc = Number(this.valorDesconto) || 0;
-        if (this.tipoDesconto === 'porcentagem') {
-            let calc = sub - (sub * (desc / 100));
-            return calc > 0 ? calc : 0;
+        return (this.tipoDesconto === 'porcentagem') ? Math.max(0, sub - (sub * (desc / 100))) : Math.max(0, sub - desc);
+    },
+
+    // --- INTEGRAÇÃO COM O BACKEND (LARAVEL) ---
+    async finalizarVenda() {
+        if(!this.itens[0].produto_id) return alert('Selecione um produto válido da lista!');
+
+        let payload = {
+            buscaCliente: this.buscaCliente,
+            cliente: this.cliente,
+            itens: this.itens,
+            subtotal: this.subtotal,
+            valorDesconto: this.valorDesconto,
+            tipoDesconto: this.tipoDesconto,
+            totalFinal: this.totalFinal
+        };
+
+        let response = await fetch('/api/vendas', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if(response.ok) {
+            let data = await response.json();
+            alert('Venda Nº ' + data.id + ' salva com sucesso! Estoque atualizado.');
+            this.carregarVendas();
+            this.aba = 'listagem';
+            // Reseta o form
+            this.itens = [{ id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false }];
+            this.valorDesconto = '';
         }
-        let calc = sub - desc;
-        return calc > 0 ? calc : 0;
+    },
+
+    async carregarVendas() {
+        let response = await fetch('/api/vendas');
+        this.vendasSalvas = await response.json();
+    },
+
+    async registrarDevolucao(id) {
+        if(confirm('Tem certeza que deseja registrar a devolução? As peças voltarão ao estoque.')) {
+            let response = await fetch(`/api/vendas/${id}/devolver`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content }
+            });
+
+            if(response.ok) {
+                alert('Devolução registrada com sucesso!');
+                this.carregarVendas();
+            }
+        }
+    },
+
+    init() {
+        this.carregarVendas(); // Carrega o histórico ao abrir a página
     }
 }" class="w-full">
 
@@ -94,7 +151,7 @@
             <button onclick="window.print()" class="bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 px-4 rounded flex items-center gap-2 transition-colors cursor-pointer">
                 Imprimir Recibo
             </button>
-            <button @click="alert('Irá salvar no banco de dados e gerar o ID do pedido.')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded flex items-center gap-2 transition-colors cursor-pointer shadow-sm">
+            <button @click="finalizarVenda()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded flex items-center gap-2 transition-colors cursor-pointer shadow-sm">
                 Finalizar Pedido
             </button>
         </div>
@@ -240,10 +297,39 @@
         </div> </div>
 
     <div x-show="aba === 'listagem'" class="space-y-4 print:hidden" style="display: none;">
-        <div class="bg-white rounded-lg p-4 border border-slate-200 text-center text-slate-500">
-            A listagem de histórico entrará aqui no futuro.
-        </div>
+    <div class="bg-white rounded-lg p-6 border-2 border-slate-200 text-slate-800 shadow-sm">
+        <h2 class="font-bold text-lg border-b pb-2 mb-4">Histórico de Vendas</h2>
+        <table class="w-full text-sm text-left">
+            <thead>
+                <tr class="bg-gray-100 border-b-2 border-gray-300">
+                    <th class="p-2">ID</th>
+                    <th class="p-2">Cliente</th>
+                    <th class="p-2">Total</th>
+                    <th class="p-2">Status</th>
+                    <th class="p-2 text-right">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="venda in vendasSalvas" :key="venda.id">
+                    <tr class="border-b hover:bg-gray-50 transition-colors">
+                        <td class="p-2 font-bold" x-text="'#' + venda.id"></td>
+                        <td class="p-2" x-text="venda.cliente_nome || 'Cliente Padrão'"></td>
+                        <td class="p-2 text-blue-700 font-bold" x-text="'R$ ' + formatarMoeda(venda.total)"></td>
+                        <td class="p-2">
+                            <span x-show="venda.status === 'concluido'" class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">Concluída</span>
+                            <span x-show="venda.status === 'devolvido'" class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">Devolvida</span>
+                        </td>
+                        <td class="p-2 text-right">
+                            <button x-show="venda.status !== 'devolvido'" @click="registrarDevolucao(venda.id)" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer">
+                                Registrar Devolução
+                            </button>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
     </div>
+</div>
 
 </div>
 
