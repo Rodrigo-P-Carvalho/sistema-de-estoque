@@ -60,10 +60,10 @@
                         <tr>
                             <th scope="col" class="px-6 py-4">Cód. Interno / Barras</th>
                             <th scope="col" class="px-6 py-4">Peça / Descrição</th>
-                            <th scope="col" class="px-6 py-4">Aplicação (RF05)</th>
-                            <th scope="col" class="px-6 py-4">Localização (RF01)</th>
-                            <th scope="col" class="px-6 py-4">Qtd. Estoque (RF04)</th>
-                            <th scope="col" class="px-6 py-4">Preço Venda (RF08)</th>
+                            <th scope="col" class="px-6 py-4">Aplicação</th>
+                            <th scope="col" class="px-6 py-4">Localização</th>
+                            <th scope="col" class="px-6 py-4">Qtd. Estoque</th>
+                            <th scope="col" class="px-6 py-4">Preço Venda</th>
                             <th scope="col" class="px-6 py-4 text-right">Ações</th>
                         </tr>
                     </thead>
