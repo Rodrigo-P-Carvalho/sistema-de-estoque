@@ -30,5 +30,25 @@ class ProdutoController extends Controller
         $produtos = $query->orderBy('nome')->paginate(10);
 
         return view('produtos.index', compact('produtos'));
+
+    }
+    public function update(Request $request, $id)
+        {
+        $produto = Produto::findOrFail($id);
+        
+        // Atualiza os dados liberados no $fillable (ou $guarded)
+        $produto->update($request->all());
+
+        return redirect()->back()->with('sucesso', 'Produto atualizado com sucesso!');
+    }
+    // Salva o novo produto no banco e recarrega a página
+    public function store(Request $request)
+    {
+        // Opcional: Se quiser adicionar validação de dados antes de salvar, coloque aqui.
+        
+        Produto::create($request->all());
+
+        // Retorna para a mesma tela, recarregando os dados, e manda uma mensagem de sucesso invisível
+        return redirect()->back()->with('sucesso', 'Nova peça cadastrada com sucesso!');
     }
 }
