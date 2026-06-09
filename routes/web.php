@@ -5,6 +5,9 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProdutoController;
 use App\Http\Controllers\VendaController;
+use App\Models\Produto;
+use App\Models\Venda;
+use Carbon\Carbon;
 use App\Models\Perfil;
 
 
@@ -21,7 +24,20 @@ Route::middleware('auth')->group(function () {
     
     // Rota do painel principal
     Route::get('/dashboard', function () {
-        return view('dashboard');
+        $totalProdutos = Produto::count();
+
+        $estoqueBaixo = Produto::whereColumn('estoque', '<=', 'quantidade_minima')->count();
+
+        $vendasMes = Venda::where('status', 'concluido')
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum('total');
+
+        $vendasHoje = Venda::where('status', 'concluido')
+            ->whereDate('created_at', Carbon::today())
+            ->sum('total');
+
+        return view('dashboard', compact('totalProdutos', 'estoqueBaixo', 'vendasMes', 'vendasHoje'));
     })->name('dashboard');
 
 

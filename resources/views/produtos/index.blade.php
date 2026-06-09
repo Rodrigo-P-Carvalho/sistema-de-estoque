@@ -321,13 +321,6 @@
             // Esconde o Modal
             document.getElementById('modal-descricao').classList.add('hidden');
         }
-
-        // Fecha o modal se o usuário clicar fora da caixa branca
-        document.getElementById('modal-descricao').addEventListener('click', function(e) {
-            if (e.target === this) {
-                fecharModalDescricao();
-            }
-        });
         function abrirModalCadastrar() {
             document.getElementById('modal-cadastrar').classList.remove('hidden');
         }
@@ -372,10 +365,11 @@
         }
 
         // Para fechar clicando fora (opcional, já integrado com o seu código anterior)
-        window.addEventListener('click', function(e) {
+        window.addEventListener('mousedown', function(e) {
             const modalDesc = document.getElementById('modal-descricao');
             const modalEdit = document.getElementById('modal-editar');
             const modalCad = document.getElementById('modal-cadastrar');
+
             if (e.target === modalDesc) fecharModalDescricao();
             if (e.target === modalEdit) fecharModalEditar();
             if (e.target === modalCad) fecharModalCadastrar();
