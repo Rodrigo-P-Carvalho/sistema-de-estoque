@@ -25,22 +25,30 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
 
 
-    // Usuarios
-    Route::get('/usuarios', function () {
-        return view('usuarios.index');
-    })->name('usuarios.index');
+    // Administração
 
-    Route::get('/usuarios/novo', function () {
-        $perfis = Perfil::all();
+    Route::prefix('administracao')->group(function () {
+        Route::get('/', function () {
+            return view('administracao.index');
+        })->name('administracao.index');
 
-        return view('usuarios.create', compact('perfis'));
-    })->name('usuarios.create');
+        // usuarios
+        Route::get('/usuarios/novo', function () {
+            $perfis = Perfil::all();
+            return view('administracao.usuarios.create', compact('perfis'));
+        })->name('usuarios.create');
 
-    Route::patch('/usuarios/primeira-senha', [UserController::class, 'salvarNovaSenha'])->name('usuarios.salvar-senha');
+        Route::patch('/usuarios/primeira-senha', [UserController::class, 'salvarNovaSenha'])->name('usuarios.salvar-senha');
+        Route::post('/usuarios/novo', [UserController::class, 'store'])->name('usuarios.store');
+        Route::get('/usuarios/lista', [UserController::class, 'lista'])->name('usuarios.lista');
 
-    Route::post('/usuarios/novo', [UserController::class, 'store'])->name('usuarios.store');
+        // fornecedores
+        Route::get('/cadastrar-fornecedores', function () {
+            return view('administracao.fornecedores.create');
+        })->name('fornecedores.index');
+    });
 
-    Route::get('/usuarios/lista', [UserController::class, 'lista'])->name('usuarios.lista');
+
 
 
     // Produtos

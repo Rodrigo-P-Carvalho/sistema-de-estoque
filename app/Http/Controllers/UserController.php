@@ -33,7 +33,7 @@ class UserController extends Controller
 
         Mail::to($usuario->email)->send(new NovoUsuarioMail($usuario->name, $senhaTemporaria));
 
-        return redirect()->route('usuarios.index');
+        return redirect()->route('administracao.index');
 
     }
     public function salvarNovaSenha(Request $request)
@@ -84,6 +84,6 @@ class UserController extends Controller
         // Pegamos todos os perfis para montar o campo do filtro
         $perfis = Perfil::all(); 
 
-        return view('usuarios.lista', compact('usuarios', 'perfis'));
+        return view('administracao.usuarios.lista', compact('usuarios', 'perfis'));
     }
 }

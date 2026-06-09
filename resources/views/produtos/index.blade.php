@@ -70,7 +70,7 @@
                             <th scope="col" class="px-6 py-4">Localização</th>
                             <th scope="col" class="px-6 py-4">Qtd. Estoque</th>
                             <th scope="col" class="px-6 py-4">Preço Venda</th>
-                            <th scope="col" class="px-6 py-4 text-right">Ações</th>
+                            <th scope="col" class="px-6 py-4 text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">

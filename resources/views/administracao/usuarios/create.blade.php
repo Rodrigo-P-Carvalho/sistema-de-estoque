@@ -12,7 +12,7 @@
                     <p class="text-slate-500 mt-1">Cadastre um novo membro da equipe para acessar o estoque.</p>
                 </div>
                 <!-- Botão Voltar -->
-                <a href="{{ route('usuarios.index') }}" class="flex items-center gap-2 text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
+                <a href="{{ route('administracao.index') }}" class="flex items-center gap-2 text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 rounded-lg font-medium transition-colors shadow-sm">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Voltar ao painel de Usuário
                 </a>
