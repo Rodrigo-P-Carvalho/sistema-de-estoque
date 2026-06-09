@@ -80,7 +80,7 @@
             </td>
             <td class="px-6 py-4 text-xs">
                 {{-- Se criar a coluna aplicacao_veicular no futuro, mostre-a aqui --}}
-                <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded">Geral</span>
+                <span class="bg-slate-200 text-slate-700 px-2 py-1 rounded">Geral</span>
             </td>
             <td class="px-6 py-4 font-medium text-slate-700">{{ $produto->localizacao ?? 'Não definida' }}</td>
             <td class="px-6 py-4">
@@ -96,18 +96,25 @@
                 @endif
             </td>
             <td class="px-6 py-4 font-medium text-slate-900">R$ {{ number_format($produto->preco, 2, ',', '.') }}</td>
-            <td class="px-6 py-4 text-right space-x-2">
-                <a href="#" class="text-blue-600 hover:text-blue-800 font-medium text-xs">Editar</a>
+            <td class="px-6 py-4 text-right space-x-3">
+            <button type="button" 
+                onclick="abrirModalDescricao(this)" 
+                data-nome="{{ $produto->nome }}" 
+                data-descricao="{{ $produto->descricao ?? 'Nenhuma descrição cadastrada para esta peça.' }}"
+                class="text-blue-600 hover:text-blue-800 font-medium text-xs underline decoration-dotted transition-colors">
+                Descrição
+            </button>
+            <a href="#" class="text-blue-600 hover:text-blue-800 font-medium text-xs">Editar</a>
             </td>
-        </tr>
-    @empty
-        <tr>
-            <td colspan="7" class="px-6 py-8 text-center text-slate-500">
-                Nenhum produto encontrado.
-            </td>
-        </tr>
-    @endforelse
-</tbody>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-slate-500">
+                                Nenhum produto encontrado.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
                 </table>
             </div>
 
@@ -119,6 +126,55 @@
         </div>
 
     </div>
+    <div id="modal-descricao" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
+            
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <h3 id="modal-titulo" class="text-lg font-bold text-slate-800">Descrição da Peça</h3>
+                <button onclick="fecharModalDescricao()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="px-6 py-6 min-h-[100px]">
+                <p id="modal-texto" class="text-slate-600 text-sm whitespace-pre-wrap leading-relaxed"></p>
+            </div>
+            
+            <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 text-right">
+                <button onclick="fecharModalDescricao()" class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
+                    Fechar
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        function abrirModalDescricao(elemento) {
+            // Pega os dados do botão clicado
+            const nome = elemento.getAttribute('data-nome');
+            const descricao = elemento.getAttribute('data-descricao');
+            
+            // Injeta os dados no Modal
+            document.getElementById('modal-titulo').innerText = nome;
+            document.getElementById('modal-texto').innerText = descricao;
+            
+            // Mostra o Modal
+            document.getElementById('modal-descricao').classList.remove('hidden');
+        }
+
+        function fecharModalDescricao() {
+            // Esconde o Modal
+            document.getElementById('modal-descricao').classList.add('hidden');
+        }
+
+        // Fecha o modal se o usuário clicar fora da caixa branca
+        document.getElementById('modal-descricao').addEventListener('click', function(e) {
+            if (e.target === this) {
+                fecharModalDescricao();
+            }
+        });
+    </script>
 
 </body>
 </html>

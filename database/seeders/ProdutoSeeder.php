@@ -12,6 +12,7 @@ class ProdutoSeeder extends Seeder
         Produto::create([
             'nome' => 'Alternador 12V 90A',
             'marca' => 'Bosch',
+            'descricao' => 'alternador da bosch, teste',
             'preco' => 489.90,
             'estoque' => 15,
             'quantidade_minima' => 5,
