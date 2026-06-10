@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Perfil;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash; 
@@ -64,12 +65,15 @@ class UserController extends Controller
         // Começamos a consulta e já pedimos para trazer a tabela de perfis junto (Eager Loading)
         $query = User::with('perfil');
 
-        // 1. SISTEMA DE PESQUISA (Se o usuário digitou algo na busca)
+        // 1. SISTEMA DE PESQUISA INTELIGENTE (Ignora estritamente o Caps Lock)
         if ($request->filled('busca')) {
-            $busca = $request->busca;
-            $query->where(function($q) use ($busca) {
-                $q->where('name', 'like', "%{$busca}%")
-                  ->orWhere('email', 'like', "%{$busca}%");
+            // Converte o termo digitado para minúsculo, tratando caracteres especiais/acentos
+            $buscaLower = mb_strtolower($request->busca);
+            
+            $query->where(function($q) use ($buscaLower) {
+                // Força a coluna do banco de dados a ficar em minúsculo na hora de comparar
+                $q->whereRaw('LOWER(name) LIKE ?', ["%{$buscaLower}%"])
+                ->orWhereRaw('LOWER(email) LIKE ?', ["%{$buscaLower}%"]);
             });
         }
 
@@ -78,12 +82,44 @@ class UserController extends Controller
             $query->where('perfil_id', $request->perfil_id);
         }
 
-        // Executamos a consulta pegando de 10 em 10 para criar a paginação
-        $usuarios = $query->paginate(10);
+        // Executamos a consulta trazendo os mais recentes primeiro
+        // IMPORTANTE: .withQueryString() anexado para não perder a busca/filtro ao mudar de página
+        $usuarios = $query->latest()->paginate(10)->withQueryString(); 
         
         // Pegamos todos os perfis para montar o campo do filtro
         $perfis = Perfil::all(); 
 
         return view('administracao.usuarios.lista', compact('usuarios', 'perfis'));
+    }
+    public function edit($id)
+    {
+        $usuario = User::findOrFail($id);
+        return response()->json($usuario);
+    }
+
+    // Salva as alterações do usuário
+    public function update(Request $request, $id)
+    {
+        // Validação dos dados vindos do Modal
+        $request->validate([
+            'edit_name'      => 'required|string|max:255',
+            'edit_email'     => 'required|email|max:255|unique:users,email,' . $id,
+            'edit_perfil_id' => 'required|exists:perfis,id',
+        ], [
+            'edit_name.required'      => 'O nome do usuário é obrigatório.',
+            'edit_email.required'     => 'O e-mail é obrigatório.',
+            'edit_email.email'        => 'Digite um formato de e-mail válido.',
+            'edit_email.unique'       => 'Este e-mail já está cadastrado para outro usuário.',
+            'edit_perfil_id.required' => 'Selecione um perfil válido para o usuário.',
+        ]);
+
+        $usuario = User::findOrFail($id);
+        $usuario->update([
+            'name'      => $request->edit_name,
+            'email'     => $request->edit_email,
+            'perfil_id' => $request->edit_perfil_id,
+        ]);
+
+        return redirect()->back()->with('sucesso', 'Usuário atualizado com sucesso!');
     }
 }

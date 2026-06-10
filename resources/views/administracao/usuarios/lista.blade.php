@@ -18,6 +18,23 @@
             </a>
         </div>
 
+        @if(session('sucesso'))
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg relative mb-6 flex items-center gap-3 shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span class="font-medium text-sm">{{ session('sucesso') }}</span>
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
+                <ul class="list-disc pl-5">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <form method="GET" action="{{ route('usuarios.lista') }}" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 items-end">
             
             <div class="flex-1 w-full">
@@ -81,10 +98,10 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 text-right space-x-2">
-                                    <a href="#" class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium">
+                                    <button type="button" onclick="abrirModalUsuario({{ $usuario->id }})" class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                         Editar
-                                    </a>
+                                    </button>
                                 </td>
                             </tr>
                         @empty
@@ -105,6 +122,81 @@
         </div>
 
     </div>
+
+    <div id="modalUsuario" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                <h4 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    Editar Cadastro do Usuário
+                </h4>
+                <button type="button" onclick="fecharModalUsuario()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l18 18"></path></svg>
+                </button>
+            </div>
+            
+            <form id="formUsuario" method="POST" class="p-6">
+                @csrf
+                @method('PUT')
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nome Completo</label>
+                        <input type="text" name="edit_name" id="edit_name" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Endereço de E-mail</label>
+                        <input type="email" name="edit_email" id="edit_email" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Perfil de Acesso</label>
+                        <select name="edit_perfil_id" id="edit_perfil_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all bg-white" required>
+                            <option value="">Selecione um perfil...</option>
+                            @foreach($perfis as $perfil)
+                                <option value="{{ $perfil->id }}">{{ $perfil->descricao }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="fecharModalUsuario()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function abrirModalUsuario(id) {
+            // 1. Busca os dados do usuário na rota correta
+            fetch(`/administracao/usuarios/${id}/editar`)
+                .then(response => {
+                    if (!response.ok) throw new Error();
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('edit_name').value = data.name || '';
+                    document.getElementById('edit_email').value = data.email || '';
+                    document.getElementById('edit_perfil_id').value = data.perfil_id || '';
+
+                    document.getElementById('formUsuario').action = `/administracao/usuarios/${id}`;
+
+                    document.getElementById('modalUsuario').classList.remove('hidden');
+                })
+                .catch(error => alert('Erro técnico ao tentar resgatar os dados do usuário.'));
+        }
+
+        function fecharModalUsuario() {
+            document.getElementById('modalUsuario').classList.add('hidden');
+        }
+    </script>
 
 </body>
 </html>

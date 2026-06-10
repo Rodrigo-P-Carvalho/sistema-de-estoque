@@ -6,6 +6,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProdutoController;
 use App\Http\Controllers\VendaController;
 use App\Http\Controllers\FornecedorController;
+use App\Http\Controllers\CompraController;
 use App\Models\Fornecedor;
 use App\Models\Produto;
 use App\Models\Venda;
@@ -51,21 +52,25 @@ Route::middleware('auth')->group(function () {
         })->name('administracao.index');
 
         // usuarios
-        Route::get('/usuarios/novo', function () {
+        Route::get('/novo-usuario', function () {
             $perfis = Perfil::all();
             return view('administracao.usuarios.create', compact('perfis'));
         })->name('usuarios.create');
 
         Route::patch('/usuarios/primeira-senha', [UserController::class, 'salvarNovaSenha'])->name('usuarios.salvar-senha');
         Route::post('/usuarios/novo', [UserController::class, 'store'])->name('usuarios.store');
-        Route::get('/usuarios/lista', [UserController::class, 'lista'])->name('usuarios.lista');
+        Route::get('/lista-usuarios', [UserController::class, 'lista'])->name('usuarios.lista');
+        Route::get('/usuarios/{id}/editar', [UserController::class, 'edit'])->name('usuarios.edit');
+        Route::put('/usuarios/{id}', [UserController::class, 'update'])->name('usuarios.update');
 
         // fornecedores
         Route::get('/fornecedores', [FornecedorController::class, 'index'])->name('fornecedores.index');
         Route::post('/fornecedores/salvar', [FornecedorController::class, 'store'])->name('fornecedores.store');
         Route::get('/fornecedores/{id}/editar', [FornecedorController::class, 'edit']);
-    Route::put('/fornecedores/{id}', [FornecedorController::class, 'update'])->name('fornecedores.update');
+        Route::put('/fornecedores/{id}', [FornecedorController::class, 'update'])->name('fornecedores.update');
     });
+
+
 
 
 
@@ -81,7 +86,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/vendas', [VendaController::class, 'index']);
     Route::post('/api/vendas', [VendaController::class, 'store']);
     Route::post('/api/vendas/{id}/devolver', [VendaController::class, 'devolver']);
-
+    //Compras
+    Route::get('/compras', [CompraController::class, 'index'])->name('compras.index');
+    Route::post('/compras', [CompraController::class, 'store'])->name('compras.store');
+    Route::get('/compras/listar', [CompraController::class, 'listarAPI']);
     // Rota de logout
     Route::post('/sair', [AuthController::class, 'sair'])->name('logout');
 
