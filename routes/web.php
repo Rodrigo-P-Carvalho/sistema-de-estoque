@@ -5,6 +5,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProdutoController;
 use App\Http\Controllers\VendaController;
+use App\Http\Controllers\FornecedorController;
+use App\Models\Fornecedor;
 use App\Models\Produto;
 use App\Models\Venda;
 use Carbon\Carbon;
@@ -59,9 +61,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/usuarios/lista', [UserController::class, 'lista'])->name('usuarios.lista');
 
         // fornecedores
-        Route::get('/cadastrar-fornecedores', function () {
-            return view('administracao.fornecedores.create');
-        })->name('fornecedores.index');
+        Route::get('/fornecedores', [FornecedorController::class, 'index'])->name('fornecedores.index');
+        Route::post('/fornecedores/salvar', [FornecedorController::class, 'store'])->name('fornecedores.store');
+        Route::get('/fornecedores/{id}/editar', [FornecedorController::class, 'edit']);
+    Route::put('/fornecedores/{id}', [FornecedorController::class, 'update'])->name('fornecedores.update');
     });
 
 

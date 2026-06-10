@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('razao_social', 150)->nullable();
             $table->string('nome_fantasia', 150)->nullable();
             $table->string('cnpj', 20)->nullable();
-            $table->string('contato', 100)->nullable();
+            $table->string('telefone', 20)->nullable(); 
+            $table->string('email', 150)->nullable();
             $table->timestamps();
         });
     }
