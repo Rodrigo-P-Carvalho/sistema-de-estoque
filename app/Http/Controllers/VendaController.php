@@ -15,14 +15,17 @@ class VendaController extends Controller
 {
     public function exibirPagina()
     {
-        return view('vendas.index'); 
+        // Busca os produtos trazendo apenas o necessário para ficar rápido
+        $produtos = Produto::all(['id', 'nome', 'preco', 'estoque']);
+
+        return view('vendas.index', compact('produtos')); // Ajuste o nome da view se for diferente
     }
     public function index()
     {
-        $vendas = Venda::with('itens.produto')->orderBy('id', 'desc')->get();
+        $vendas = Venda::with(['itens.produto'])->orderBy('id', 'desc')->get();
         return response()->json($vendas);
     }
-
+    
     // Salva a venda e dá baixa no estoque (RF02)
     public function store(Request $request)
     {

@@ -58,8 +58,7 @@
 
                 <div class="flex border-b border-gray-800 relative" @click.away="mostrarDropdownFornecedor = false">
                     <div class="w-24 shrink-0 font-bold border-r border-gray-800 px-2 py-1 text-xs bg-gray-50 flex items-center">RAZÃO SOCIAL</div>
-                    <input type="text" x-model="buscaFornecedor" @input="mostrarDropdownFornecedor = true; fornecedor.cnpj = ''; fornecedor.telefone = ''; fornecedor.email = '';" @focus="mostrarDropdownFornecedor = true" class="flex-1 min-w-0 px-2 py-1 outline-none text-xs uppercase focus:bg-yellow-50" autocomplete="off" placeholder="Digite para buscar...">
-
+                    <input type="text" x-model="buscaFornecedor" @input="mostrarDropdownFornecedor = true; fornecedor.nome_exibicao = buscaFornecedor" @focus="mostrarDropdownFornecedor = true" class="flex-1 min-w-0 px-2 py-1 outline-none text-xs uppercase focus:bg-yellow-50" autocomplete="off" placeholder="Digite para buscar...">
                     <div x-show="mostrarDropdownFornecedor && fornecedoresFiltrados.length > 0" x-transition class="absolute top-full left-24 right-0 bg-white border border-gray-300 shadow-xl z-50 max-h-40 overflow-y-auto print:hidden">
                         <template x-for="f in fornecedoresFiltrados" :key="f.cnpj">
                             <div @click="selecionarFornecedor(f)" class="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 text-xs">
