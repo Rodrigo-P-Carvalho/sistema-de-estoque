@@ -9,100 +9,234 @@ use App\Models\Compra;
 use App\Models\Venda;
 use App\Models\Perfil;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Faker\Factory as Faker;
+use Carbon\Carbon;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
+        $faker = Faker::create('pt_BR');
+
+        $this->command->info('Iniciando a geração de dados em massa para a apresentação...');
+
+        // ==========================================
+        // 1. PERFIL E USUÁRIO ADMIN
+        // ==========================================
         $perfilAdmin = Perfil::firstOrCreate(
             ['id' => 1],
+            ['descricao' => 'Administrador', 'permissoes' => ['cadastrar_usuarios', 'compras', 'vendas', 'produtos', 'administracao']]
+        );
+
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@sistema.com'],
             [
-                'descricao' => 'Administrador',
-                'permissoes' => ['cadastrar_usuarios', 'compras', 'vendas', 'produtos', 'administracao'] 
+                'id' => 1,
+                'name' => 'Administrador Geral',
+                'password' => Hash::make('admin123'),
+                'perfil_id' => $perfilAdmin->id,
             ]
         );
 
-        if (!User::where('id', 1)->exists()) {
-            User::create([
-                'id'            => 1,
-                'name'          => 'Administrador Geral',
-                'email'         => 'admin@sistema.com',
-                'password'      => Hash::make('admin123'), // Altere após o primeiro login
-                'perfil_id'     => $perfilAdmin->id,
+        // ==========================================
+        // 2. FORNECEDORES (Gerando 10 aleatórios)
+        // ==========================================
+        $fornecedoresIds = [];
+        for ($i = 0; $i < 10; $i++) {
+            $fornecedor = Fornecedor::create([
+                'razao_social' => $faker->company . ' Peças e Acessórios S.A.',
+                'nome_fantasia' => $faker->company,
+                'cnpj' => $faker->cnpj,
+                'telefone' => $faker->cellphoneNumber,
+                'email' => $faker->companyEmail,
+            ]);
+            $fornecedoresIds[] = $fornecedor->id;
+        }
+        $this->command->info('10 Fornecedores criados.');
+
+        // ==========================================
+        // 3. VEÍCULOS REAIS (Gerando 20 comuns no Brasil)
+        // ==========================================
+        $marcasModelos = [
+            'Volkswagen' => ['Gol', 'Polo', 'Saveiro', 'Virtus', 'Fox'],
+            'Chevrolet' => ['Onix', 'Prisma', 'S10', 'Cruze', 'Tracker'],
+            'Fiat' => ['Strada', 'Argo', 'Toro', 'Mobi', 'Palio'],
+            'Toyota' => ['Corolla', 'Hilux', 'Yaris', 'Etios'],
+        ];
+
+        $veiculosIds = [];
+        foreach ($marcasModelos as $marca => $modelos) {
+            foreach ($modelos as $modelo) {
+                $id = DB::table('veiculos')->insertGetId([
+                    'marca' => $marca,
+                    'modelo' => $modelo,
+                    'ano' => $faker->numberBetween(2010, 2026),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $veiculosIds[] = $id;
+            }
+        }
+        $this->command->info('20 Veículos criados.');
+
+        // ==========================================
+        // 4. PRODUTOS (Gerando 50 peças de carro)
+        // ==========================================
+        $pecas = ['Pastilha de Freio', 'Amortecedor', 'Correia Dentada', 'Bateria 60Ah', 'Óleo 5W30', 'Filtro de Ar', 'Vela de Ignição', 'Bomba D\'Água', 'Disco de Freio', 'Radiador', 'Kit Embreagem', 'Pneu 175/70 R14', 'Farol Dianteiro', 'Palheta Limpador', 'Sonda Lambda'];
+        $marcasPecas = ['Bosch', 'Moura', 'Castrol', 'Cobreq', 'NGK', 'Cofap', 'Valeo', 'Wega', 'Pirelli', 'Magneti Marelli'];
+
+        $produtosIds = [];
+        for ($i = 0; $i < 50; $i++) {
+            $produto = Produto::create([
+                'nome' => $faker->randomElement($pecas) . ' ' . $faker->word,
+                'marca' => $faker->randomElement($marcasPecas),
+                'descricao' => $faker->sentence,
+                'preco' => $faker->randomFloat(2, 20, 800),
+                'estoque' => $faker->numberBetween(5, 100),
+                'quantidade_minima' => $faker->numberBetween(2, 10),
+                'codigo_interno' => strtoupper($faker->bothify('PEC-####')),
+                'codigo_barras' => $faker->ean13,
+                'localizacao' => 'Corredor ' . $faker->randomLetter . ' - Prat. ' . $faker->numberBetween(1, 10)
+            ]);
+            $produtosIds[] = $produto->id;
+
+            // Vincula de 1 a 3 veículos compatíveis com essa peça
+            $veiculosCompativeis = $faker->randomElements($veiculosIds, $faker->numberBetween(1, 3));
+            foreach ($veiculosCompativeis as $vId) {
+                DB::table('produto_veiculo')->insert(['produto_id' => $produto->id, 'veiculo_id' => $vId]);
+            }
+        }
+        $this->command->info('50 Produtos criados e vinculados a veículos.');
+
+        // ==========================================
+        // 5. COMPRAS (Entradas de Estoque - 30 Registros)
+        // ==========================================
+        for ($i = 0; $i < 30; $i++) {
+            $totalCompra = 0;
+            $dataCompra = $faker->dateTimeBetween('-6 months', 'now');
+            
+            $compra = Compra::create([
+                'data_compra' => $dataCompra,
+                'fornecedor_id' => $faker->randomElement($fornecedoresIds),
+                'subtotal' => 0, // Será atualizado logo abaixo
+                'valor_desconto' => $faker->randomFloat(2, 0, 50),
+                'tipo_desconto' => 'reais',
+                'total' => 0
+            ]);
+
+            // Adiciona de 1 a 5 itens nesta compra
+            $qtdItens = $faker->numberBetween(1, 5);
+            $produtosSorteados = $faker->randomElements($produtosIds, $qtdItens);
+
+            foreach ($produtosSorteados as $pId) {
+                $qtd = $faker->numberBetween(5, 30);
+                $custo = $faker->randomFloat(2, 10, 300);
+                $subtotalItem = $qtd * $custo;
+                $totalCompra += $subtotalItem;
+
+                DB::table('itens_compra')->insert([
+                    'compra_id' => $compra->id,
+                    'produto_id' => $pId,
+                    'quantidade' => $qtd,
+                    'custo_unitario' => $custo,
+                    'subtotal' => $subtotalItem,
+                    'created_at' => $dataCompra,
+                    'updated_at' => $dataCompra,
+                ]);
+            }
+
+            // Atualiza o total da compra
+            $compra->update([
+                'subtotal' => $totalCompra,
+                'total' => $totalCompra - $compra->valor_desconto
             ]);
         }
-        $fornecedor1 = Fornecedor::create([
-            'razao_social' => 'Distribuidora de Peças Central S.A.',
-            'nome_fantasia' => 'Central Auto Peças',
-            'cnpj' => '11.111.111/0001-11',
-            'telefone' => '(11) 3333-1111',
-            'email' => 'vendas@centralpecas.com.br',
-        ]);
+        $this->command->info('30 Notas de Compra geradas.');
 
-        $fornecedor2 = Fornecedor::create([
-            'razao_social' => 'Óleos e Lubrificantes Brasil LTDA',
-            'nome_fantasia' => 'Brasil Lubrificantes',
-            'cnpj' => '22.222.222/0001-22',
-            'telefone' => '(19) 99999-2222',
-            'email' => 'contato@brasillub.com.br',
-        ]);
+        // ==========================================
+        // 6. VENDAS E PDV (Saídas de Estoque - 80 Registros)
+        // ==========================================
+        for ($i = 0; $i < 80; $i++) {
+            $totalVenda = 0;
+            $dataVenda = $faker->dateTimeBetween('-3 months', 'now');
+            
+            // 10% de chance de ser uma venda devolvida
+            $status = $faker->randomElement(['concluido', 'concluido', 'concluido', 'concluido', 'devolvido']);
 
-        // 3. Seeder de Peças de Carro (Produtos)
-        $p1 = Produto::create(['nome' => 'PASTILHA DE FREIO COBREQ', 'marca' => 'COBREQ', 'descricao' => 'Pastilha dianteira universal', 'preco' => 85.50, 'estoque' => 10]);
-        $p2 = Produto::create(['nome' => 'ÓLEO DE MOTOR SINTÉTICO 5W30 1L', 'marca' => 'CASTROL', 'descricao' => 'Óleo para motores flex', 'preco' => 45.00, 'estoque' => 24]);
-        $p3 = Produto::create(['nome' => 'FILTRO DE ÓLEO WEGA', 'marca' => 'WEGA', 'descricao' => 'Filtro de óleo blindado', 'preco' => 25.00, 'estoque' => 15]);
-        $p4 = Produto::create(['nome' => 'VELA DE IGNIÇÃO NGK', 'marca' => 'NGK', 'descricao' => 'Jogo de velas resistivas', 'preco' => 60.00, 'estoque' => 8]);
-        $p5 = Produto::create(['nome' => 'BATERIA MOURA 60AH', 'marca' => 'MOURA', 'descricao' => 'Bateria 12V 60Ah', 'preco' => 420.00, 'estoque' => 5]);
+            $vendaId = DB::table('vendas')->insertGetId([
+                'user_id' => $admin->id,
+                'cliente_nome' => $faker->name,
+                'cliente_telefone' => $faker->cellphoneNumber,
+                'cliente_cpf_cnpj' => $faker->cpf,
+                'subtotal' => 0,
+                'valor_desconto' => $faker->randomElement([0, 5, 10]), // 0, 5 ou 10 de desconto
+                'tipo_desconto' => 'porcentagem',
+                'total' => 0,
+                'status' => $status,
+                'observacoes' => $faker->optional(0.3)->sentence, // 30% de chance de ter observação
+                'data_venda' => $dataVenda,
+                'created_at' => $dataVenda,
+                'updated_at' => $dataVenda,
+            ]);
 
-        // 4. Seeder de Compras (Entrada de Estoque)
-        $compra1 = Compra::create([
-            'data_compra' => now()->subDays(5),
-            'fornecedor_id' => $fornecedor1->id,
-            'subtotal' => 231.00,
-            'valor_desconto' => 11.00,
-            'tipo_desconto' => 'reais',
-            'total' => 220.00
-        ]);
+            // Adiciona de 1 a 4 itens nesta venda
+            $qtdItens = $faker->numberBetween(1, 4);
+            $produtosSorteados = $faker->randomElements($produtosIds, $qtdItens);
 
-        // Inserindo os itens da compra via DB::table (protege caso não tenha criado os models de Itens ainda)
-        DB::table('itens_compra')->insert([
-            ['compra_id' => $compra1->id, 'produto_id' => $p1->id, 'quantidade' => 2, 'custo_unitario' => 55.50, 'subtotal' => 111.00, 'created_at' => now(), 'updated_at' => now()],
-            ['compra_id' => $compra1->id, 'produto_id' => $p4->id, 'quantidade' => 2, 'custo_unitario' => 60.00, 'subtotal' => 120.00, 'created_at' => now(), 'updated_at' => now()],
-        ]);
+            foreach ($produtosSorteados as $pId) {
+                $produtoAtual = Produto::find($pId);
+                $qtd = $faker->numberBetween(1, 4);
+                $preco = $produtoAtual->preco;
+                $subtotalItem = $qtd * $preco;
+                $totalVenda += $subtotalItem;
 
-        // 5. Seeder de Vendas (Saída de Estoque)
-        $venda1 = Venda::create([
-            'user_id' => $user->id,
-            'cliente_nome' => 'JOÃO DA SILVA',
-            'cliente_telefone' => '(19) 98888-7777',
-            'cliente_cpf_cnpj' => '123.456.789-00',
-            'subtotal' => 200.00,
-            'valor_desconto' => 10,
-            'tipo_desconto' => 'porcentagem', // 10% de desconto
-            'total' => 180.00,
-            'status' => 'concluido',
-            'observacoes' => 'Cliente pediu revisão rápida para viagem.',
-            'data_venda' => now()->subDays(2)
-        ]);
+                DB::table('itens_venda')->insert([
+                    'venda_id' => $vendaId,
+                    'produto_id' => $pId,
+                    'quantidade' => $qtd,
+                    'preco_unitario' => $preco,
+                    'subtotal' => $subtotalItem,
+                    'created_at' => $dataVenda,
+                    'updated_at' => $dataVenda,
+                ]);
+            }
 
-        DB::table('itens_venda')->insert([
-            ['venda_id' => $venda1->id, 'produto_id' => $p2->id, 'quantidade' => 4, 'preco_unitario' => 45.00, 'subtotal' => 180.00, 'created_at' => now(), 'updated_at' => now()],
-            ['venda_id' => $venda1->id, 'produto_id' => $p3->id, 'quantidade' => 1, 'preco_unitario' => 20.00, 'subtotal' => 20.00, 'created_at' => now(), 'updated_at' => now()],
-        ]);
+            // Calcula os descontos e atualiza a venda final
+            $descontoCalculado = ($totalVenda * DB::table('vendas')->where('id', $vendaId)->value('valor_desconto')) / 100;
+            
+            DB::table('vendas')->where('id', $vendaId)->update([
+                'subtotal' => $totalVenda,
+                'total' => $totalVenda - $descontoCalculado
+            ]);
 
-        // Mensagem de sucesso no terminal
-        $this->command->info('Seeder executado com sucesso! Peças, Fornecedores, Compras e Vendas foram inseridos no banco.');
+            // Se for status 'devolvido', cria o registro de devolução
+            if ($status === 'devolvido') {
+                $devolucaoId = DB::table('devolucoes')->insertGetId([
+                    'venda_id' => $vendaId,
+                    'user_id' => $admin->id,
+                    'data_devolucao' => Carbon::parse($dataVenda)->addDays($faker->numberBetween(1, 5)),
+                    'motivo_devolucao' => $faker->sentence,
+                    'valor_estornado' => $totalVenda - $descontoCalculado,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
-        $this->call([
-        ProdutoSeeder::class,
-        ]);
+                // Devolve os itens no banco
+                foreach ($produtosSorteados as $pId) {
+                    DB::table('itens_devolucao')->insert([
+                        'devolucao_id' => $devolucaoId,
+                        'produto_id' => $pId,
+                        'quantidade_devolvida' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+        $this->command->info('80 Vendas registradas no PDV (incluindo histórico de devoluções).');
+
+        $this->command->info('✅ Tudo pronto! Banco de dados recheado e preparado para a apresentação!');
     }
-}       
+}
