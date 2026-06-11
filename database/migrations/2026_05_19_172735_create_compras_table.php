@@ -15,6 +15,9 @@ return new class extends Migration
             $table->id();
             $table->date('data_compra');
             $table->foreignId('fornecedor_id')->constrained('fornecedores');
+            $table->decimal('subtotal', 10, 2)->nullable();
+            $table->decimal('valor_desconto', 10, 2)->default(0);
+            $table->string('tipo_desconto')->default('reais'); // 'reais' ou 'porcentagem'
             $table->decimal('total', 10, 2)->nullable();
             $table->timestamps();
         });

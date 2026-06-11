@@ -108,6 +108,7 @@
                     <table class="w-full text-xs text-left border-collapse relative">
                         <thead>
                             <tr class="bg-gray-50 border-b-2 border-gray-800">
+                                <th x-show="itens.length > 1" class="border-r border-gray-800 p-1 w-8 text-center print:hidden"></th>
                                 <th class="border-r border-gray-800 p-1 w-12 text-center">ITEM</th>
                                 <th class="border-r border-gray-800 p-1 pl-2">PRODUTO/SERVIÇO</th>
                                 <th class="border-r border-gray-800 p-1 w-20 text-center">QUANT.</th>
@@ -117,6 +118,11 @@
                         <tbody>
                             <template x-for="(item, index) in itens" :key="item.id">
                                 <tr class="border-b border-gray-400" @click.away="item.dropdown = false">
+                                    <td x-show="itens.length > 1" class="border-r border-gray-800 text-center bg-gray-50 print:hidden">
+                                        <button type="button" @click="removerItem(index)" class="text-red-600 hover:text-red-800 font-bold text-sm transition-colors cursor-pointer px-1 focus:outline-none" title="Remover este item">
+                                            ✕
+                                        </button>
+                                    </td>
                                     <td class="border-r border-gray-800 text-center text-gray-500 bg-gray-50" x-text="index + 1"></td>
                                     <td class="border-r border-gray-800 p-0 relative">
                                         <input type="text" x-model="item.nome" @input="item.dropdown = true" @focus="item.dropdown = true" class="w-full h-full px-2 py-1 outline-none uppercase focus:bg-yellow-50" autocomplete="off" placeholder="">
@@ -143,9 +149,9 @@
                             </template>
 
                             <tr class="print:hidden">
-                                <td colspan="4" class="p-1">
-                                    <button @click="adicionarItem()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1 rounded text-xs border border-dashed border-slate-300 transition-colors">
-                                        + Adicionar Linha
+                                <td :colspan="itens.length > 1 ? 5 : 4">
+                                    <button type="button" @click="adicionarItem()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded text-xs border border-dashed border-slate-300 transition-colors cursor-pointer">
+                                        + Adicionar Linha de Produto
                                     </button>
                                 </td>
                             </tr>
@@ -415,8 +421,18 @@
             
             get clientesFiltrados() {
                 if(this.buscaCliente === '') return [];
-                let busca = this.normalizarTexto(this.buscaCliente);
-                return this.clientesDB.filter(c => this.normalizarTexto(c.nome).startsWith(busca));
+                
+                let buscaNormal = this.normalizarTexto(this.buscaCliente); // Busca texto
+                let buscaNum = this.buscaCliente.replace(/\D/g, ''); // Busca só os números
+
+                return this.clientesDB.filter(c => {
+                    // Junta nome e e-mail para a busca de texto
+                    let nomeEmail = this.normalizarTexto((c.nome || '') + ' ' + (c.email || ''));
+                    // Junta CPF e telefone tirando a formatação para a busca de números
+                    let docsTels = (c.cpf_cnpj || '').replace(/\D/g, '') + (c.telefone || '').replace(/\D/g, '');
+                    
+                    return nomeEmail.includes(buscaNormal) || (buscaNum !== '' && docsTels.includes(buscaNum));
+                });
             },
             selecionarCliente(c) {
                 this.buscaCliente = c.nome;
@@ -430,6 +446,11 @@
             ],
             adicionarItem() {
                 this.itens.push({ id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false });
+            },
+            removerItem(index) {
+                if (this.itens.length > 1) {
+                    this.itens.splice(index, 1);
+                }
             },
             
             // Injeta os produtos reais direto do banco de dados
@@ -467,10 +488,21 @@
 
             get vendasFiltradas() {
                 let lista = this.vendasSalvas;
+                
+                // 1. FILTRO DE CLIENTE (Agora busca por Nome, CPF/CNPJ, Telefone e Email)
                 if (this.filtroCliente.trim() !== '') {
-                    let buscaCli = this.normalizarTexto(this.filtroCliente);
-                    lista = lista.filter(v => this.normalizarTexto(v.cliente_nome || '').includes(buscaCli));
+                    let buscaNormal = this.normalizarTexto(this.filtroCliente);
+                    let buscaNum = this.filtroCliente.replace(/\D/g, '');
+
+                    lista = lista.filter(v => {
+                        let nomeEmail = this.normalizarTexto((v.cliente_nome || '') + ' ' + (v.cliente_email || ''));
+                        let docsTels = (v.cliente_cpf_cnpj || '').replace(/\D/g, '') + (v.cliente_telefone || '').replace(/\D/g, '');
+                        
+                        return nomeEmail.includes(buscaNormal) || (buscaNum !== '' && docsTels.includes(buscaNum));
+                    });
                 }
+                
+                // 2. FILTRO DE PRODUTO
                 if (this.filtroProduto.trim() !== '') {
                     let buscaProd = this.normalizarTexto(this.filtroProduto);
                     lista = lista.filter(v => {
@@ -491,44 +523,78 @@
             },
 
             // --- INTEGRAÇÃO COM O BACKEND (LARAVEL) ---
-            async finalizarVenda() {
-                if(!this.itens[0].produto_id) return alert('Selecione um produto válido da lista!');
+            // --- INTEGRAÇÃO COM O BACKEND (LARAVEL) ---
+        async finalizarVenda() {
+            // Garante que o nome do cliente vai no objeto, mesmo se for digitado manualmente
+            if (!this.cliente.nome && this.buscaCliente) {
+                this.cliente.nome = this.buscaCliente;
+            }
 
-                let payload = {
-                    buscaCliente: this.buscaCliente,
-                    cliente: this.cliente,
-                    itens: this.itens,
-                    subtotal: this.subtotal,
-                    valorDesconto: this.valorDesconto,
-                    tipoDesconto: this.tipoDesconto,
-                    totalFinal: this.totalFinal
-                };
+            // --- NOVA VALIDAÇÃO DE SEGURANÇA DO CLIENTE ---
+            if (!this.cliente.nome || this.cliente.nome.trim() === '') {
+                return alert('Erro: É obrigatório preencher o NOME do cliente para prosseguir!');
+            }
 
-                try {
-                    let response = await fetch('/api/vendas', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
-                        },
-                        body: JSON.stringify(payload)
-                    });
+            if (!this.cliente.cpf_cnpj || this.cliente.cpf_cnpj.trim() === '') {
+                return alert('Erro: É obrigatório preencher o CPF/CNPJ do cliente!');
+            }
 
-                    if(response.ok) {
-                        let data = await response.json();
-                        alert('Venda Nº ' + data.id + ' salva com sucesso! Estoque atualizado.');
-                        this.carregarVendas();
-                        this.aba = 'listagem';
-                        // Reseta o form
-                        this.itens = [{ id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false }];
-                        this.valorDesconto = '';
-                        this.buscaCliente = '';
-                        this.cliente = { nome: '', telefone: '', email: '', cpf_cnpj: '', rg_ie: '', endereco: '', bairro: '', cidade: '', estado: '', cep: '' };
-                    }
-                } catch(e) {
-                    console.error('Erro ao finalizar venda:', e);
+            // Verifica se tem e-mail OU telefone preenchido
+            let temEmail = this.cliente.email && this.cliente.email.trim() !== '';
+            let temTelefone = this.cliente.telefone && this.cliente.telefone.trim() !== '';
+
+            if (!temEmail && !temTelefone) {
+                return alert('Erro: Você precisa informar pelo menos um meio de contato (E-MAIL ou TELEFONE)!');
+            }
+
+            // --- VALIDAÇÃO DOS ITENS ---
+            if(!this.itens[0].nome) {
+                return alert('Preencha pelo menos o nome do primeiro produto ou serviço!');
+            }
+
+            let payload = {
+                buscaCliente: this.buscaCliente,
+                cliente: this.cliente,
+                itens: this.itens,
+                subtotal: this.subtotal,
+                valorDesconto: this.valorDesconto || 0,
+                tipoDesconto: this.tipoDesconto,
+                totalFinal: this.totalFinal
+            };
+
+            try {
+                let response = await fetch('/api/vendas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                let data = await response.json();
+
+                if(response.ok) {
+                    alert('Venda Nº ' + (data.id || '') + ' guardada com sucesso!');
+                    this.carregarVendas();
+                    this.aba = 'listagem';
+                    
+                    // Limpa o formulário após sucesso
+                    this.itens = [{ id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false }];
+                    this.valorDesconto = '';
+                    this.buscaCliente = '';
+                    this.cliente = { nome: '', telefone: '', email: '', cpf_cnpj: '', rg_ie: '', endereco: '', bairro: '', cidade: '', estado: '', cep: '' };
+                } else {
+                    alert('Erro ao guardar: ' + (data.message || data.error || 'Verifique os dados enviados.'));
+                    console.error("Detalhes do erro:", data);
                 }
-            },
+                
+            } catch(e) {
+                alert('Falha de ligação com o servidor. Verifique a consola.');
+                console.error(e);
+            }
+        },
 
             async carregarVendas() {
                 try {

@@ -12,9 +12,13 @@ class Compra extends Model
     protected $table = 'compras';
 
     protected $fillable = [
-        'data_compra',
-        'fornecedor_id',
-        'total'
+        'fornecedor_id', 
+        'data_compra', 
+        'subtotal', 
+        'valor_desconto', 
+        'tipo_desconto', 
+        'total', 
+        'observacoes'
     ];
 
     public function fornecedor()

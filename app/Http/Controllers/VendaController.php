@@ -26,53 +26,83 @@ class VendaController extends Controller
         return response()->json($vendas);
     }
     
-    // Salva a venda e dá baixa no estoque (RF02)
     public function store(Request $request)
     {
+        // 1. Inicia uma transação para garantir que tudo salve ou nada salve (evita dados órfãos)
         DB::beginTransaction();
+
         try {
-            // 1. Cria a Venda principal
+            $dadosCliente = $request->input('cliente');
+
+            // 2. Cria o cabeçalho da Venda
             $venda = Venda::create([
-                'user_id' => Auth::id() ?? null, // Aceita null se não estiver logado
-                'cliente_nome' => $request->cliente['nome'] ?? $request->buscaCliente,
-                'cliente_telefone' => $request->cliente['telefone'] ?? null,
-                'cliente_cpf_cnpj' => $request->cliente['cpf_cnpj'] ?? null,
-                'subtotal' => $request->subtotal,
-                'valor_desconto' => $request->valorDesconto ?: 0,
-                'tipo_desconto' => $request->tipoDesconto,
-                'total' => $request->totalFinal,
-                'status' => 'concluido'
+                'user_id'          => Auth::id() ?? 1, // Associa o usuário logado (ou ID 1 se não houver autenticação ainda)
+                'cliente_nome'     => $dadosCliente['nome'] ?? $request->input('buscaCliente'),
+                'cliente_telefone' => $dadosCliente['telefone'] ?? null,
+                'cliente_email'    => $dadosCliente['email'] ?? null,
+                'cliente_cpf_cnpj' => $dadosCliente['cpf_cnpj'] ?? null,
+                'cliente_rg_ie'    => $dadosCliente['rg_ie'] ?? null,
+                'cliente_endereco' => $dadosCliente['endereco'] ?? null,
+                'cliente_bairro'   => $dadosCliente['bairro'] ?? null,
+                'cliente_cidade'   => $dadosCliente['cidade'] ?? null,
+                'cliente_estado'   => $dadosCliente['estado'] ?? null,
+                'cliente_cep'      => $dadosCliente['cep'] ?? null,
+                
+                'subtotal'         => $request->input('subtotal'),
+                'valor_desconto'   => $request->input('valorDesconto') ?? 0,
+                'tipo_desconto'    => $request->input('tipoDesconto') ?? 'reais',
+                'total'            => $request->input('totalFinal'),
+                'status'           => 'concluido',
+                'observacoes'      => $request->input('observacoes') ?? null,
             ]);
 
-            // 2. Cria os Itens e baixa o estoque
-            foreach ($request->itens as $item) {
-                if (!empty($item['produto_id'])) {
-                    ItemVenda::create([
-                        'venda_id' => $venda->id,
-                        'produto_id' => $item['produto_id'],
-                        'quantidade' => $item['qtd'],
-                        'preco_unitario' => $item['valor'],
-                        'subtotal' => $item['qtd'] * $item['valor']
-                    ]);
+            // 3. Pega o array de itens/produtos vindos da requisição
+            $itens = $request->input('itens', []);
 
-                    // RF02 - Dá baixa no estoque
-                    $produto = Produto::find($item['produto_id']);
-                    if($produto) {
-                        $produto->decrement('estoque', $item['qtd']);
+            if (empty($itens)) {
+                return response()->json(['success' => false, 'error' => 'A venda precisa ter pelo menos um produto.'], 400);
+            }
+
+            // 4. Percorre cada produto inserindo na tabela relacionada e baixando o estoque
+            foreach ($itens as $item) {
+                // Evita processar linhas em branco que possam vir do frontend
+                if (empty($item['produto_id'])) continue;
+
+                // Salva na tabela itens_venda (Verifique se no seu model a FK é venda_id)
+                ItemVenda::create([
+                    'venda_id'        => $venda->id,
+                    'produto_id'      => $item['produto_id'],
+                    'quantidade'      => $item['qtd'] ?? $item['quantidade'],
+                    'preco_unitario'  => $item['valor'] ?? $item['preco'],
+                    'subtotal'        => ($item['qtd'] ?? $item['quantidade']) * ($item['valor'] ?? $item['preco']),
+                ]);
+
+                // 5. Baixa Automática de Estoque (RF10)
+                $produto = Produto::find($item['produto_id']);
+                if ($produto) {
+                    if ($produto->estoque < ($item['qtd'] ?? $item['quantidade'])) {
+                        throw new \Exception("Estoque insuficiente para o produto: {$produto->nome}");
                     }
+                    
+                    $produto->decrement('estoque', $item['qtd'] ?? $item['quantidade']);
                 }
             }
 
+            // Se tudo correu bem, salva em definitivo no banco
             DB::commit();
-            return response()->json(['message' => 'Venda salva!', 'id' => $venda->id]);
+
+            return response()->json([
+                'id' => $venda->id, 
+                'success' => true, 
+                'message' => 'Venda realizada e estoque atualizado com sucesso!'
+            ]);
 
         } catch (\Exception $e) {
+            // Se der qualquer erro (falha de banco, falta de estoque, etc), desfaz tudo
             DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
-
-    // Registra a devolução e devolve ao estoque (RF10)
     public function devolver($id)
     {
         DB::beginTransaction();

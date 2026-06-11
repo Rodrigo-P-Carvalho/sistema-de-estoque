@@ -22,65 +22,63 @@ class CompraController extends Controller
     }
 
     // 2. Salva a compra vinda do JavaScript
+    // 2. Salva a compra vinda do JavaScript (Apenas para produtos existentes)
     public function store(Request $request)
     {
-        // Usamos transação: se der erro no meio, ele desfaz tudo automaticamente
         DB::beginTransaction();
         
         try {
-            $compra = Compra::create([
-                'data_compra' => now(),
-                'fornecedor_id' => $request->fornecedor_id,
-                'total' => $request->total,
-            ]);
+            // Validação de segurança para garantir que o fornecedor foi selecionado
+            if (!$request->input('fornecedor_id')) {
+                throw new \Exception("Por favor, selecione um fornecedor válido da lista.");
+            }
 
-            $idPrimeiroProdutoNovo = null; // Guardará o ID do novo produto para o redirecionamento
+            // Cria a compra principal
+            $compra = Compra::create([
+                'fornecedor_id'  => $request->input('fornecedor_id'),
+                'data_compra'    => now(),
+                'subtotal'       => $request->input('subtotal'),
+                'valor_desconto' => $request->input('valorDesconto') ?: 0,
+                'tipo_desconto'  => $request->input('tipoDesconto') ?? 'reais',
+                'total'          => $request->input('totalFinal'),
+            ]);
 
             foreach ($request->itens as $item) {
                 $produtoId = $item['produto_id'];
 
-                // SE O PRODUTO NÃO EXISTE: CRIAR AGORA
+                // BARRAGEM DE SEGURANÇA: Se não tem ID, bloqueia a gravação!
                 if (empty($produtoId)) {
-                    $novoProduto = Produto::create([
-                        'nome' => mb_strtoupper($item['nome']), // Salva padrão caixa alta
-                        'preco' => $item['valor'],
-                        'estoque' => $item['qtd'],
-                        // Preencha campos obrigatórios da sua tabela com defaults se tiver (ex: preco_venda => 0)
-                    ]);
-
-                    $produtoId = $novoProduto->id;
-                    
-                    // Salva o id do primeiro produto novo criado para mandar o usuário para a tela de edição
-                    if (!$idPrimeiroProdutoNovo) {
-                        $idPrimeiroProdutoNovo = $produtoId;
-                    }
-                } 
-                // SE O PRODUTO JÁ EXISTE: APENAS ATUALIZA O ESTOQUE
-                else {
-                    $produto = Produto::find($produtoId);
-                    $produto->increment('estoque', $item['qtd']);
-                    // Opcional: Atualiza o preço de custo do produto para o valor pago nesta compra mais recente
-                    $produto->update(['preco_custo' => $item['valor']]);
+                    throw new \Exception("O produto '" . ($item['nome'] ?? 'Não informado') . "' não está cadastrado no sistema. Cadastre-o na aba de Produtos antes de lançar esta compra.");
                 }
 
-                // Cria o Vínculo (Item da Compra)
+                $quantidade = $item['qtd'] ?? $item['quantidade'] ?? 1;
+                $custoUnitario = $item['valor'] ?? $item['custo_unitario'] ?? $item['preco'] ?? 0;
+
+                // O produto obrigatoriamente já existe, então apenas buscamos e incrementamos o estoque
+                $produto = Produto::find($produtoId);
+                if ($produto) {
+                    $produto->increment('estoque', $quantidade);
+                    $produto->update(['preco_custo' => $custoUnitario]);
+                } else {
+                    throw new \Exception("O produto com ID {$produtoId} não foi encontrado na base de dados.");
+                }
+
+                // Cria o item da compra vinculado
                 ItemCompra::create([
-                    'compra_id' => $compra->id,
-                    'produto_id' => $produtoId,
-                    'quantidade' => $item['qtd'],
-                    'custo_unitario' => $item['valor'],
-                    'subtotal' => $item['qtd'] * $item['valor'],
+                    'compra_id'      => $compra->id,
+                    'produto_id'     => $produtoId,
+                    'quantidade'     => $quantidade,
+                    'custo_unitario' => $custoUnitario,
+                    'subtotal'       => $quantidade * $custoUnitario,
                 ]);
             }
 
-            DB::commit(); // Salva tudo de vez no banco
+            DB::commit();
 
-            // Resposta de Sucesso para o Javascript
             return response()->json([
                 'success' => true,
                 'compra_id' => $compra->id,
-                // Aqui geramos a URL dinâmica para a tela de edição do seu sistema de produtos!
-                'redirecionar_para' => $idPrimeiroProdutoNovo ? route('produtos.index') . "?editar=" . $idPrimeiroProdutoNovo : null
+                'redirecionar_para' => null // Sem redirecionamento, pois não há novos produtos
             ]);
 
         } catch (\Exception $e) {

@@ -88,6 +88,7 @@
                     <table class="w-full text-xs text-left border-collapse relative">
                         <thead>
                             <tr class="bg-gray-50 border-b-2 border-gray-800">
+                                <th x-show="itens.length > 1" class="border-r border-gray-800 p-1 w-8 text-center print:hidden"></th>
                                 <th class="border-r border-gray-800 p-1 w-12 text-center">ITEM</th>
                                 <th class="border-r border-gray-800 p-1 pl-2">PRODUTO/PEÇA</th>
                                 <th class="border-r border-gray-800 p-1 w-20 text-center">QUANT.</th>
@@ -97,6 +98,12 @@
                         <tbody>
                             <template x-for="(item, index) in itens" :key="item.id">
                                 <tr class="border-b border-gray-400" @click.away="item.dropdown = false">
+                                    <td x-show="itens.length > 1" class="border-r border-gray-800 text-center bg-gray-50 print:hidden">
+                                        <button type="button" @click="removerItem(index)" class="text-red-600 hover:text-red-800 font-bold text-sm transition-colors cursor-pointer px-1 focus:outline-none" title="Remover este item">
+                                            ✕
+                                        </button>
+                                    </td>
+                                    
                                     <td class="border-r border-gray-800 text-center text-gray-500 bg-gray-50" x-text="index + 1"></td>
                                     <td class="border-r border-gray-800 p-0 relative">
                                         <input type="text" x-model="item.nome" @input="item.dropdown = true" @focus="item.dropdown = true" class="w-full h-full px-2 py-1 outline-none uppercase focus:bg-yellow-50" autocomplete="off" placeholder="Nome do produto...">
@@ -120,7 +127,7 @@
                             </template>
 
                             <tr class="print:hidden">
-                                <td colspan="4" class="p-1">
+                                <td :colspan="itens.length > 1 ? 5 : 4" class="p-1">
                                     <button type="button" @click="adicionarItem()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded text-xs border border-dashed border-slate-300 transition-colors cursor-pointer">
                                         + Adicionar Linha de Produto
                                     </button>
@@ -185,7 +192,16 @@
                             
                             <td class="p-4 text-slate-600" x-text="new Date(compra.data_compra).toLocaleDateString('pt-BR')"></td>
                             
-                            <td class="p-4 font-medium text-slate-800" x-text="compra.fornecedor_nome"></td>
+                            <<td class="p-2">
+                                <div class="font-bold text-slate-700 uppercase leading-tight" 
+                                    x-text="compra.fornecedor?.razao_social || compra.fornecedor?.nome_fantasia || 'Fornecedor não informado'">
+                                </div>
+                                
+                                <div class="text-xs text-slate-400 mt-0.5" 
+                                    x-show="compra.fornecedor?.cnpj" 
+                                    x-text="'CNPJ: ' + formatarCNPJ(compra.fornecedor?.cnpj)">
+                                </div>
+                            </td>
                             
                             <td class="p-4 text-right font-bold text-blue-600" x-text="'R$ ' + formatarMoeda(compra.total)"></td>
 
@@ -284,7 +300,7 @@
                                             <td class="border-r border-gray-800 text-center text-gray-500 bg-gray-50 py-1" x-text="index + 1"></td>
                                             <td class="border-r border-gray-800 px-2 py-1 uppercase font-medium" x-text="item.nome || item.produto?.nome || 'Item avulso'"></td>
                                             <td class="border-r border-gray-800 px-2 py-1 text-center" x-text="item.qtd || item.quantidade"></td>
-                                            <td class="px-2 py-1 text-right" x-text="'R$ ' + formatarMoeda(item.valor || item.preco)"></td>
+                                            <td class="px-2 py-1 text-right" x-text="'R$ ' + formatarMoeda(item.custo_unitario || item.valor)"></td>
                                         </tr>
                                     </template>
                                 </tbody>
@@ -368,21 +384,21 @@
                 let numero = Number(valor) || 0;
                 return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             },
-            formatarCNPJ(cnpj) {
-                if (!cnpj) return '';
-                // Remove tudo que não for número
-                let v = cnpj.replace(/\D/g, '');
+            formatarCNPJ(v) {
+                if (!v) return '';
                 
-                // Aplica a máscara progressivamente
+                // Remove tudo o que não for número
+                v = String(v).replace(/\D/g, '');
+                
+                // Aplica a formatação de CNPJ: XX.XXX.XXX/XXXX-XX
                 v = v.replace(/^(\d{2})(\d)/, '$1.$2');
                 v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
                 v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
                 v = v.replace(/(\d{4})(\d)/, '$1-$2');
                 
-                // Trava no limite de 18 caracteres (00.000.000/0000-00)
+                // Trava no limite exato de 18 caracteres do CNPJ
                 return v.substring(0, 18);
             },
-
             formatarTelefone(tel) {
                 if (!tel) return '';
                 // Remove tudo que não for número
@@ -430,13 +446,18 @@
                 this.mostrarDropdownFornecedor = false;
             },
 
-            // --- LÓGICA DE PRODUTOS E ITENS ---
             itens: [
                 { id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false }
             ],
             
             adicionarItem() {
                 this.itens.push({ id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false });
+            },
+
+            removerItem(index) {
+                if (this.itens.length > 1) {
+                    this.itens.splice(index, 1); 
+                }
             },
             
             produtosDB: @json($produtos),
@@ -467,14 +488,25 @@
             },
 
             // --- INTEGRAÇÃO API ---
+            // --- INTEGRAÇÃO API ---
             async finalizarCompra() {
                 if(!this.fornecedor.id) return alert('Selecione um fornecedor da lista!');
                 if(!this.itens[0].nome) return alert('Adicione pelo menos um produto!');
 
+                // --- VALIDAÇÃO BLOQUEADORA: Exige produto cadastrado na base ---
+                for (let i = 0; i < this.itens.length; i++) {
+                    if (!this.itens[i].produto_id) {
+                        return alert(`O produto da Linha ${i + 1} ("${this.itens[i].nome || 'Vazio'}") não foi selecionado da lista de autocompletar. Cadastre esta peça primeiro na aba de Produtos!`);
+                    }
+                }
+
                 let payload = {
                     fornecedor_id: this.fornecedor.id,
-                    total: this.totalFinal,
-                    itens: this.itens
+                    itens: this.itens,
+                    subtotal: this.subtotal,
+                    valorDesconto: this.valorDesconto || 0,
+                    tipoDesconto: this.tipoDesconto,
+                    totalFinal: this.totalFinal
                 };
 
                 try {
@@ -491,18 +523,14 @@
                     let data = await response.json();
 
                     if(response.ok && data.success) {
-                        if(data.redirecionar_para) {
-                            alert('Redirecionando para complementar cadastro da nova peça...');
-                            window.location.href = data.redirecionar_para;
-                        } else {
-                            alert('Compra salva com sucesso!');
-                            this.carregarCompras();
-                            this.aba = 'listagem';
-                            this.itens = [{ id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false }];
-                            this.valorDesconto = '';
-                            this.buscaFornecedor = '';
-                            this.fornecedor = { id: null };
-                        }
+                        // Limpeza simples de sucesso (removido redirecionamento para produto novo)
+                        alert('Compra salva com sucesso!');
+                        this.carregarCompras();
+                        this.aba = 'listagem';
+                        this.itens = [{ id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false }];
+                        this.valorDesconto = '';
+                        this.buscaFornecedor = '';
+                        this.fornecedor = { id: null };
                     } else {
                         alert('Erro ao salvar: ' + (data.error || 'Erro desconhecido no servidor.'));
                     }
