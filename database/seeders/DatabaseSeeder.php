@@ -22,17 +22,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-        $perfilAdmin = Perfil::create([
-            'descricao' => 'Administrador',
-            'permissoes' => ['total'] // Uma tag genérica para o Admin
-        ]);
-        $user = User::firstOrCreate([
-            'name' => 'Admin do Sistema',
-            'email' => 'admin@estoque.com',
-            'password' => Hash::make('senha123'), // Criptografa a senha "senha123"
-            'perfil_id' => $perfilAdmin->id,
-        ]);
+        $perfilAdmin = Perfil::firstOrCreate(
+            ['id' => 1],
+            [
+                'descricao' => 'Administrador',
+                'permissoes' => ['cadastrar_usuarios', 'compras', 'vendas', 'produtos', 'administracao'] 
+            ]
+        );
+
+        if (!User::where('id', 1)->exists()) {
+            User::create([
+                'id'            => 1,
+                'name'          => 'Administrador Geral',
+                'email'         => 'admin@sistema.com',
+                'password'      => Hash::make('admin123'), // Altere após o primeiro login
+                'perfil_id'     => $perfilAdmin->id,
+            ]);
+        }
         $fornecedor1 = Fornecedor::create([
             'razao_social' => 'Distribuidora de Peças Central S.A.',
             'nome_fantasia' => 'Central Auto Peças',

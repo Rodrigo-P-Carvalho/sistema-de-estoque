@@ -103,48 +103,55 @@ class VendaController extends Controller
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
-    public function devolver($id)
-    {
-        DB::beginTransaction();
-        try {
-            $venda = Venda::with('itens')->findOrFail($id);
-            
-            if ($venda->status === 'devolvido') {
-                return response()->json(['error' => 'Venda já foi devolvida.'], 400);
-            }
+    public function registrarDevolucao(Request $request, $id)
+{
+    $venda = Venda::findOrFail($id);
 
-            // 1. Registra na tabela de devoluções
-            $devolucao = Devolucao::create([
-                'venda_id' => $venda->id,
-                'user_id' => 1, // Mudar para Auth::id() depois
-                'valor_estornado' => $venda->total,
-                'motivo_devolucao' => 'Devolução total registrada pelo sistema'
-            ]);
+    // Validação básica do valor estornado
+    if ($request->input('valor_estornado') < 0) {
+        return response()->json(['success' => false, 'error' => 'O valor estornado não pode ser negativo.'], 422);
+    }
 
-            // 2. Devolve os itens pro estoque e registra em itens_devolucao
-            foreach ($venda->itens as $item) {
+    DB::beginTransaction();
+    try {
+        // 1. Salva o cabeçalho da devolução
+        $devolucao = Devolucao::create([
+            'venda_id'          => $venda->id,
+            'user_id'           => Auth::id() ?? 1, // Pega o ID do usuário logado (ou fallback ID 1)
+            'data_devolucao'    => now(),
+            'motivo_devolucao'  => $request->input('motivo_devolucao') ?? 'Não informado',
+            'valor_estornado'   => $request->input('valor_estornado', $venda->total),
+        ]);
+
+        // 2. Processa os itens selecionados para devolução
+        foreach ($request->input('itens', []) as $itemData) {
+            $quantidadeDevolvida = intval($itemData['quantidade_devolvida'] ?? 0);
+
+            // Só processa se o item tem ID de produto cadastrado e quantidade válida
+            if (!empty($itemData['produto_id']) && $quantidadeDevolvida > 0) {
                 ItemDevolucao::create([
-                    'devolucao_id' => $devolucao->id,
-                    'produto_id' => $item->produto_id,
-                    'quantidade_devolvida' => $item->quantidade
+                    'devolucao_id'         => $devolucao->id,
+                    'produto_id'           => $itemData['produto_id'],
+                    'quantidade_devolvida' => $quantidadeDevolvida,
                 ]);
 
-                // Retorna ao estoque (RF10)
-                $produto = Produto::find($item->produto_id);
-                if($produto) {
-                    $produto->increment('quantidade', $item->quantidade);
+                // REGRA DE NEGÓCIO: Devolve os produtos físicos de volta ao estoque
+                $produto = Produto::find($itemData['produto_id']);
+                if ($produto) {
+                    $produto->increment('estoque', $quantidadeDevolvida);
                 }
             }
-
-            // 3. Atualiza o status da Venda
-            $venda->update(['status' => 'devolvido']);
-
-            DB::commit();
-            return response()->json(['message' => 'Devolução registrada e estoque atualizado!']);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 500);
         }
+
+        // 3. Muda o status da venda original para 'devolvido'
+        $venda->update(['status' => 'devolvido']);
+
+        DB::commit();
+        return response()->json(['success' => true, 'message' => 'Devolução concluída com sucesso!']);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json(['success' => false, 'error' => 'Falha ao processar: ' . $e->getMessage()], 500);
     }
+}
 }

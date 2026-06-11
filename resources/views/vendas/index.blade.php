@@ -149,8 +149,8 @@
                             </template>
 
                             <tr class="print:hidden">
-                                <td :colspan="itens.length > 1 ? 5 : 4">
-                                    <button type="button" @click="adicionarItem()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded text-xs border border-dashed border-slate-300 transition-colors cursor-pointer">
+                                <td :colspan="itens.length > 1 ? 5 : 4" class="p-1">
+                                    <button @click="adicionarItem()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded text-xs border border-dashed border-slate-300 transition-colors cursor-pointer">
                                         + Adicionar Linha de Produto
                                     </button>
                                 </td>
@@ -197,8 +197,16 @@
                     <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">Buscar por Produto/Serviço</label>
                     <input type="text" x-model="filtroProduto" class="w-full px-3 py-2 border border-slate-300 rounded outline-none text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 uppercase" placeholder="Ex: Alternador...">
                 </div>
+                <div class="w-48">
+                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">Status da Venda</label>
+                    <select x-model="filtroStatus" class="w-full px-3 py-2 border border-slate-300 bg-white rounded outline-none text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-semibold">
+                        <option value="todos">⭐ TODAS</option>
+                        <option value="concluido">🟢 CONCLUÍDAS</option>
+                        <option value="devolvido">🔴 DEVOLVIDAS</option>
+                    </select>
+                </div>
                 <div class="flex items-end">
-                    <button type="button" @click="filtroCliente = ''; filtroProduto = ''" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold rounded text-sm transition-colors cursor-pointer border border-slate-300">
+                    <button type="button" @click="filtroCliente = ''; filtroProduto = ''; filtroStatus = 'todos'" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold rounded text-sm transition-colors cursor-pointer border border-slate-300">
                         Limpar
                     </button>
                 </div>
@@ -227,7 +235,7 @@
                                 <button @click="abrirDetalhes(venda)" class="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-white px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer shadow-sm">
                                     Ver Recibo
                                 </button>
-                                <button x-show="venda.status !== 'devolvido'" @click="registrarDevolucao(venda.id)" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer">
+                                <button x-show="venda.status !== 'devolvido'" @click="abrirModalDevolucao(venda)" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer shadow-sm">
                                     Devolução
                                 </button>
                             </td>
@@ -239,11 +247,8 @@
     </div>
 
     <div x-show="mostrarModalDetalhes" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:p-0 print:block print:bg-transparent print:absolute print:inset-0">
-        
         <div class="absolute inset-0 print:hidden" @click="fecharDetalhes()"></div>
-
         <div class="relative w-full max-w-4xl max-h-screen overflow-y-auto bg-gray-100 p-6 rounded-xl shadow-2xl print:max-h-none print:bg-white print:shadow-none print:rounded-none print:p-0">
-            
             <div class="flex justify-between items-center mb-4 print:hidden sticky top-0 bg-gray-100 py-2 z-10 border-b border-gray-300">
                 <h3 class="font-bold text-lg text-slate-800">Detalhes do Pedido #<span x-text="vendaSelecionada?.id"></span></h3>
                 <div class="flex gap-2">
@@ -258,7 +263,6 @@
 
             <template x-if="vendaSelecionada">
                 <div class="w-[210mm] min-h-[297mm] max-w-full mx-auto bg-white p-6 border-2 border-gray-800 text-black font-sans text-sm flex flex-col print:border-none print:w-full print:min-h-0 print:m-0 print:p-0">
-                    
                     <div class="flex justify-between items-stretch border-b-2 border-gray-800 pb-4 mb-2 gap-4">
                         <div class="w-1/4 border-2 border-gray-800 flex items-center justify-center p-2 bg-gray-50">
                             <span class="text-xs text-gray-500 text-center">[Logo]</span>
@@ -279,31 +283,26 @@
 
                     <div class="border-2 border-gray-800 mb-2">
                         <div class="bg-gray-200 text-center font-bold border-b-2 border-gray-800 uppercase tracking-widest text-xs py-1">Cliente</div>
-
                         <div class="flex border-b border-gray-800">
                             <div class="w-24 shrink-0 font-bold border-r border-gray-800 px-2 py-1 text-xs bg-gray-50 flex items-center">NOME</div>
                             <div class="flex-1 px-2 py-1 text-xs uppercase" x-text="vendaSelecionada.cliente_nome || 'Não informado'"></div>
                         </div>
-
                         <div class="flex border-b border-gray-800">
                             <div class="w-24 shrink-0 font-bold border-r border-gray-800 px-2 py-1 text-xs bg-gray-50 flex items-center">TELEFONE</div>
                             <div class="w-1/3 px-2 py-1 text-xs border-r border-gray-800" x-text="formatarTelefone(vendaSelecionada.cliente_telefone)"></div>
                             <div class="w-16 shrink-0 font-bold border-r border-gray-800 px-2 py-1 text-xs bg-gray-50 flex items-center">EMAIL</div>
                             <div class="flex-1 px-2 py-1 text-xs" x-text="vendaSelecionada.cliente_email"></div>
                         </div>
-
                         <div class="flex border-b border-gray-800">
                             <div class="w-24 shrink-0 font-bold border-r border-gray-800 px-2 py-1 text-xs bg-gray-50 flex items-center">CPF/CNPJ</div>
                             <div class="w-1/2 px-2 py-1 text-xs border-r border-gray-800" x-text="formatarCPFCNPJ(vendaSelecionada.cliente_cpf_cnpj)"></div>
                             <div class="w-16 shrink-0 font-bold border-r border-gray-800 px-2 py-1 text-xs bg-gray-50 flex items-center">RG/IE</div>
                             <div class="flex-1 px-2 py-1 text-xs uppercase" x-text="vendaSelecionada.cliente_rg_ie"></div>
                         </div>
-
                         <div class="flex border-b border-gray-800">
                             <div class="w-24 shrink-0 font-bold border-r border-gray-800 px-2 py-1 text-xs bg-gray-50 flex items-center">ENDEREÇO</div>
                             <div class="flex-1 px-2 py-1 text-xs uppercase" x-text="vendaSelecionada.cliente_endereco"></div>
                         </div>
-
                         <div class="flex">
                             <div class="w-20 shrink-0 font-bold border-r border-gray-800 px-2 py-1 text-xs bg-gray-50 flex items-center">BAIRRO</div>
                             <div class="flex-1 px-2 py-1 text-xs uppercase border-r border-gray-800" x-text="vendaSelecionada.cliente_bairro"></div>
@@ -318,7 +317,6 @@
 
                     <div class="border-2 border-gray-800 mb-2 flex-1 flex flex-col">
                         <div class="bg-gray-200 text-center font-bold border-b-2 border-gray-800 uppercase tracking-widest text-xs py-1">Orçamento</div>
-
                         <div class="flex-1">
                             <table class="w-full text-xs text-left border-collapse relative">
                                 <thead>
@@ -359,18 +357,77 @@
                         <div class="bg-gray-200 text-center font-bold border-b-2 border-gray-800 uppercase tracking-widest text-xs py-1">Observações</div>
                         <div class="p-2 min-h-[60px] text-xs uppercase" x-text="vendaSelecionada.observacoes || 'Nenhuma observação registrada.'"></div>
                     </div>
-
                 </div>
             </template>
         </div>
     </div>
 
+    <div x-show="mostrarModalDevolucao" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="absolute inset-0" @click="mostrarModalDevolucao = false"></div>
+        <div class="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden z-10 border border-slate-300">
+            
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+                <h3 class="font-bold text-md">Lançar Devolução de Peças - Venda #<span x-text="devolucaoForm.venda_id"></span></h3>
+                <button type="button" @click="mostrarModalDevolucao = false" class="text-white hover:text-red-400 font-bold text-lg">✕</button>
+            </div>
+
+            <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+                <p class="text-xs text-slate-500 font-medium">Informe a quantidade de itens aceitos de volta e o valor parcial ou total que será devolvido ao cliente.</p>
+
+                <div class="border rounded-lg overflow-hidden">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-slate-100 font-bold border-b">
+                            <tr>
+                                <th class="p-2">Peça / Produto</th>
+                                <th class="p-2 text-center w-24">Qtd Vendida</th>
+                                <th class="p-2 text-center w-32">Qtd Devolvendo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="item in devolucaoForm.itens">
+                                <tr class="border-b hover:bg-slate-50">
+                                    <td class="p-2 font-medium uppercase" x-text="item.nome"></td>
+                                    <td class="p-2 text-center font-bold text-slate-500" x-text="item.quantidade_max"></td>
+                                    <td class="p-2 text-center">
+                                        <input type="number" min="0" :max="item.quantidade_max" x-model="item.quantidade_devolvida" :disabled="!item.produto_id" class="w-20 px-2 py-1 text-center border rounded font-bold text-blue-600 focus:outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400">
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1 uppercase">Valor a Estornar (R$)</label>
+                        <input type="number" step="0.01" min="0" x-model="devolucaoForm.valor_estornado" class="w-full px-3 py-2 border rounded font-bold text-red-600 outline-none focus:border-red-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1 uppercase">Motivo do Estorno / Devolução</label>
+                        <textarea x-model="devolucaoForm.motivo_devolucao" class="w-full h-11 px-3 py-1 border rounded text-xs outline-none focus:border-slate-500 uppercase resize-none" placeholder="Ex: Peça errada, desistência..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-3 flex justify-end gap-2 border-t text-right">
+                <button type="button" @click="mostrarModalDevolucao = false" class="px-4 py-2 border rounded text-slate-600 hover:bg-slate-100 text-xs font-bold transition-all cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" @click="enviarDevolucao()" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-bold shadow transition-all cursor-pointer">
+                    Confirmar e Extornar
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>
+
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('moduloVendas', () => ({
             aba: 'novo_pedido',
             vendasSalvas: [],
+            filtroStatus: 'todos', // NOVO ESTADO DE FILTRO DE STATUS
 
             // --- FUNÇÕES GERAIS ---
             normalizarTexto(texto) {
@@ -386,11 +443,11 @@
             formatarCPFCNPJ(v) {
                 if (!v) return '';
                 v = v.replace(/\D/g, '');
-                if (v.length <= 11) { // CPF
+                if (v.length <= 11) { 
                     v = v.replace(/(\d{3})(\d)/, '$1.$2');
                     v = v.replace(/(\d{3})(\d)/, '$1.$2');
                     v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-                } else { // CNPJ
+                } else { 
                     v = v.replace(/^(\d{2})(\d)/, '$1.$2');
                     v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
                     v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
@@ -421,16 +478,12 @@
             
             get clientesFiltrados() {
                 if(this.buscaCliente === '') return [];
-                
-                let buscaNormal = this.normalizarTexto(this.buscaCliente); // Busca texto
-                let buscaNum = this.buscaCliente.replace(/\D/g, ''); // Busca só os números
+                let buscaNormal = this.normalizarTexto(this.buscaCliente);
+                let buscaNum = this.buscaCliente.replace(/\D/g, '');
 
                 return this.clientesDB.filter(c => {
-                    // Junta nome e e-mail para a busca de texto
                     let nomeEmail = this.normalizarTexto((c.nome || '') + ' ' + (c.email || ''));
-                    // Junta CPF e telefone tirando a formatação para a busca de números
                     let docsTels = (c.cpf_cnpj || '').replace(/\D/g, '') + (c.telefone || '').replace(/\D/g, '');
-                    
                     return nomeEmail.includes(buscaNormal) || (buscaNum !== '' && docsTels.includes(buscaNum));
                 });
             },
@@ -453,7 +506,6 @@
                 }
             },
             
-            // Injeta os produtos reais direto do banco de dados
             produtosDB: @json($produtos),
             
             produtosFiltrados(busca) {
@@ -480,7 +532,7 @@
                 return (this.tipoDesconto === 'porcentagem') ? Math.max(0, sub - (sub * (desc / 100))) : Math.max(0, sub - desc);
             },
 
-            // --- LÓGICA DE BUSCA E MODAL DO HISTÓRICO ---
+            // --- LÓGICA DE BUSCA DO HISTÓRICO ---
             filtroCliente: '',
             filtroProduto: '',
             mostrarModalDetalhes: false,
@@ -489,7 +541,12 @@
             get vendasFiltradas() {
                 let lista = this.vendasSalvas;
                 
-                // 1. FILTRO DE CLIENTE (Agora busca por Nome, CPF/CNPJ, Telefone e Email)
+                // 1. NOVO FILTRO DE STATUS DA VENDA
+                if (this.filtroStatus !== 'todos') {
+                    lista = lista.filter(v => v.status === this.filtroStatus);
+                }
+
+                // 2. FILTRO DE CLIENTE
                 if (this.filtroCliente.trim() !== '') {
                     let buscaNormal = this.normalizarTexto(this.filtroCliente);
                     let buscaNum = this.filtroCliente.replace(/\D/g, '');
@@ -497,12 +554,11 @@
                     lista = lista.filter(v => {
                         let nomeEmail = this.normalizarTexto((v.cliente_nome || '') + ' ' + (v.cliente_email || ''));
                         let docsTels = (v.cliente_cpf_cnpj || '').replace(/\D/g, '') + (v.cliente_telefone || '').replace(/\D/g, '');
-                        
                         return nomeEmail.includes(buscaNormal) || (buscaNum !== '' && docsTels.includes(buscaNum));
                     });
                 }
                 
-                // 2. FILTRO DE PRODUTO
+                // 3. FILTRO DE PRODUTO
                 if (this.filtroProduto.trim() !== '') {
                     let buscaProd = this.normalizarTexto(this.filtroProduto);
                     lista = lista.filter(v => {
@@ -522,79 +578,116 @@
                 this.vendaSelecionada = null;
             },
 
-            // --- INTEGRAÇÃO COM O BACKEND (LARAVEL) ---
-            // --- INTEGRAÇÃO COM O BACKEND (LARAVEL) ---
-        async finalizarVenda() {
-            // Garante que o nome do cliente vai no objeto, mesmo se for digitado manualmente
-            if (!this.cliente.nome && this.buscaCliente) {
-                this.cliente.nome = this.buscaCliente;
-            }
+            // --- ESTADOS EXTRAS DA DEVOLUÇÃO ---
+            mostrarModalDevolucao: false,
+            devolucaoForm: { venda_id: null, motivo_devolucao: '', valor_estornado: 0, itens: [] },
 
-            // --- NOVA VALIDAÇÃO DE SEGURANÇA DO CLIENTE ---
-            if (!this.cliente.nome || this.cliente.nome.trim() === '') {
-                return alert('Erro: É obrigatório preencher o NOME do cliente para prosseguir!');
-            }
-
-            if (!this.cliente.cpf_cnpj || this.cliente.cpf_cnpj.trim() === '') {
-                return alert('Erro: É obrigatório preencher o CPF/CNPJ do cliente!');
-            }
-
-            // Verifica se tem e-mail OU telefone preenchido
-            let temEmail = this.cliente.email && this.cliente.email.trim() !== '';
-            let temTelefone = this.cliente.telefone && this.cliente.telefone.trim() !== '';
-
-            if (!temEmail && !temTelefone) {
-                return alert('Erro: Você precisa informar pelo menos um meio de contato (E-MAIL ou TELEFONE)!');
-            }
-
-            // --- VALIDAÇÃO DOS ITENS ---
-            if(!this.itens[0].nome) {
-                return alert('Preencha pelo menos o nome do primeiro produto ou serviço!');
-            }
-
-            let payload = {
-                buscaCliente: this.buscaCliente,
-                cliente: this.cliente,
-                itens: this.itens,
-                subtotal: this.subtotal,
-                valorDesconto: this.valorDesconto || 0,
-                tipoDesconto: this.tipoDesconto,
-                totalFinal: this.totalFinal
-            };
-
-            try {
-                let response = await fetch('/api/vendas', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                let data = await response.json();
-
-                if(response.ok) {
-                    alert('Venda Nº ' + (data.id || '') + ' guardada com sucesso!');
-                    this.carregarVendas();
-                    this.aba = 'listagem';
-                    
-                    // Limpa o formulário após sucesso
-                    this.itens = [{ id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false }];
-                    this.valorDesconto = '';
-                    this.buscaCliente = '';
-                    this.cliente = { nome: '', telefone: '', email: '', cpf_cnpj: '', rg_ie: '', endereco: '', bairro: '', cidade: '', estado: '', cep: '' };
-                } else {
-                    alert('Erro ao guardar: ' + (data.message || data.error || 'Verifique os dados enviados.'));
-                    console.error("Detalhes do erro:", data);
-                }
+            abrirModalDevolucao(venda) {
+                this.devolucaoForm.venda_id = venda.id;
+                this.devolucaoForm.motivo_devolucao = '';
+                this.devolucaoForm.valor_estornado = venda.total;
                 
-            } catch(e) {
-                alert('Falha de ligação com o servidor. Verifique a consola.');
-                console.error(e);
-            }
-        },
+                // Mapeia os itens da venda para a estrutura do pop-up
+                this.devolucaoForm.itens = venda.itens.map(item => ({
+                    produto_id: item.produto_id || item.produto?.id || null,
+                    nome: item.nome || item.produto?.nome || 'Item/Serviço Avulso',
+                    quantidade_max: item.quantidade,
+                    quantidade_devolvida: item.quantidade // Inicia sugerindo devolução total
+                }));
+                this.mostrarModalDevolucao = true;
+            },
+
+            async enviarDevolucao() {
+                try {
+                    let response = await fetch(`/api/vendas/${this.devolucaoForm.venda_id}/devolver`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+                        },
+                        body: JSON.stringify(this.devolucaoForm)
+                    });
+
+                    let data = await response.json();
+
+                    if(response.ok) {
+                        alert('Devolução registrada e estoque atualizado com sucesso!');
+                        this.mostrarModalDevolucao = false;
+                        this.carregarVendas();
+                    } else {
+                        alert('Erro ao processar devolução: ' + (data.error || 'Erro interno.'));
+                    }
+                } catch(e) {
+                    console.error(e);
+                    alert('Erro de comunicação com o servidor.');
+                }
+            },
+
+            // --- SALVAR PEDIDO / VENDA ---
+            async finalizarVenda() {
+                // Garante o nome do cliente
+                if (!this.cliente.nome && this.buscaCliente) {
+                    this.cliente.nome = this.buscaCliente;
+                }
+
+                // 🔴 EXTRA: TRAVAS DE SEGURANÇA OBRIGATÓRIAS DO CLIENTE SOLICITADAS ANTERIORMENTE 🔴
+                if (!this.cliente.nome || this.cliente.nome.trim() === '') {
+                    return alert('Erro: É obrigatório preencher o NOME do cliente!');
+                }
+                if (!this.cliente.cpf_cnpj || this.cliente.cpf_cnpj.trim() === '') {
+                    return alert('Erro: É obrigatório preencher o CPF/CNPJ do cliente!');
+                }
+                let temEmail = this.cliente.email && this.cliente.email.trim() !== '';
+                let temTelefone = this.cliente.telefone && this.cliente.telefone.trim() !== '';
+                if (!temEmail && !temTelefone) {
+                    return alert('Erro: Forneça ao menos um meio de contato (E-MAIL ou TELEFONE)!');
+                }
+
+                if(!this.itens[0].nome) {
+                    return alert('Preencha pelo menos o nome do primeiro produto ou serviço!');
+                }
+
+                let payload = {
+                    buscaCliente: this.buscaCliente,
+                    cliente: this.cliente,
+                    itens: this.itens,
+                    subtotal: this.subtotal,
+                    valorDesconto: this.valorDesconto || 0,
+                    tipoDesconto: this.tipoDesconto,
+                    totalFinal: this.totalFinal
+                };
+
+                try {
+                    let response = await fetch('/api/vendas', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    let data = await response.json();
+
+                    if(response.ok) {
+                        alert('Venda Nº ' + (data.id || '') + ' guardada com sucesso!');
+                        this.carregarVendas();
+                        this.aba = 'listagem';
+                        
+                        this.itens = [{ id: Date.now(), produto_id: null, nome: '', qtd: '1', valor: '', dropdown: false }];
+                        this.valorDesconto = '';
+                        this.buscaCliente = '';
+                        this.cliente = { nome: '', telefone: '', email: '', cpf_cnpj: '', rg_ie: '', endereco: '', bairro: '', cidade: '', estado: '', cep: '' };
+                    } else {
+                        alert('Erro ao guardar: ' + (data.message || data.error || 'Verifique os dados enviados.'));
+                    }
+                } catch(e) {
+                    alert('Falha de ligação com o servidor.');
+                    console.error(e);
+                }
+            },
 
             async carregarVendas() {
                 try {
@@ -604,24 +697,6 @@
                     }
                 } catch(e) {
                     console.error('Erro ao carregar vendas:', e);
-                }
-            },
-
-            async registrarDevolucao(id) {
-                if(confirm('Tem certeza que deseja registrar a devolução? As peças voltarão ao estoque.')) {
-                    try {
-                        let response = await fetch(`/api/vendas/${id}/devolver`, {
-                            method: 'POST',
-                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content }
-                        });
-
-                        if(response.ok) {
-                            alert('Devolução registrada com sucesso!');
-                            this.carregarVendas();
-                        }
-                    } catch(e) {
-                        console.error('Erro na devolução:', e);
-                    }
                 }
             },
 

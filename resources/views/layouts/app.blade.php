@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AutoPeças - Sistema</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-slate-100 flex h-screen overflow-hidden font-sans">
 
@@ -14,32 +15,42 @@
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('dashboard') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} rounded-lg font-medium transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                 Dashboard
             </a>
 
+            @if(auth()->user()->hasPermission('produtos'))
             <a href="{{ route('produtos.index') }}" class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('produtos.*') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} rounded-lg font-medium transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                 Produtos
             </a>
+            @endif
 
+            @if(auth()->user()->hasPermission('vendas'))
             <a href="{{ route('vendas.index') }}" class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('vendas.*') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} rounded-lg font-medium transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 Vendas
             </a>
+            @endif
 
+            @if(auth()->user()->hasPermission('compras'))
             <a href="{{ route('compras.index') }}" class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('compras.*') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} rounded-lg font-medium transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
                 </svg>
                 Compras
             </a>
+            @endif
 
-            <a href="{{ route('administracao.index') }}" class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('usuarios.*') || request()->routeIs('administracao.*') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} rounded-lg font-medium transition-colors">
+            @if(auth()->user()->hasPermission('administracao'))
+            <a href="{{ route('administracao.index') }}" class="flex items-center gap-3 px-4 py-3 {{ request()->routeIs('usuarios.*') || request()->routeIs('perfis.*') || request()->routeIs('administracao.*') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} rounded-lg font-medium transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 Administração
             </a>
+            @endif
+
         </nav>
 
         <div class="p-4 border-t border-slate-200">
@@ -53,7 +64,7 @@
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-screen overflow-y-auto print:">
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
         <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm flex-shrink-0 print:hidden">
             <h2 class="text-xl font-semibold text-slate-800">
                 @yield('titulo_pagina', 'Visão Geral')
@@ -72,6 +83,31 @@
     </main>
 
     @if(auth()->check() && auth()->user()->primeiro_acesso)
+        <div x-data="{ open: true }" x-show="open" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-50 px-4">
+            <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+                <h2 class="text-xl font-bold text-slate-800 mb-2">Primeiro Acesso</h2>
+                <p class="text-slate-600 mb-6">Por segurança, crie sua senha definitiva para continuar usando o sistema.</p>
+                
+                <form action="{{ route('usuarios.salvar-senha') }}" method="POST">
+                    @csrf
+                    @method('PATCH')
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700">Nova Senha</label>
+                        <input type="password" name="password" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-slate-700">Confirmar Nova Senha</label>
+                        <input type="password" name="password_confirmation" class="w-full mt-1 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition-colors">
+                        Salvar e Acessar
+                    </button>
+                </form>
+            </div>
+        </div>
     @endif
 
 </body>

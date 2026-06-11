@@ -20,6 +20,13 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
             'perfil_id' => ['required', 'exists:perfis,id'],
+        ], [
+            // Mensagens customizadas em Português
+            'name.required' => 'O nome é obrigatório.',
+            'email.required' => 'O e-mail é obrigatório.',
+            'email.email' => 'O e-mail deve ser um endereço de e-mail válido.',
+            'email.unique' => 'Este e-mail já está cadastrado no sistema.',
+            'perfil_id.required' => 'Você deve selecionar um perfil de acesso.',
         ]);
 
         $senhaTemporaria = Str::random(8);
@@ -34,8 +41,7 @@ class UserController extends Controller
 
         Mail::to($usuario->email)->send(new NovoUsuarioMail($usuario->name, $senhaTemporaria));
 
-        return redirect()->route('administracao.index');
-
+        return redirect()->route('administracao.index')->with('sucesso', 'Usuário criado com sucesso!');
     }
     public function salvarNovaSenha(Request $request)
     {

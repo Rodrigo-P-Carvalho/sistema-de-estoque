@@ -24,19 +24,28 @@
                 <!-- Coloquei action="#" por enquanto, para não dar erro ao testar o layout -->
                 <form action="{{ route('usuarios.store') }}" method="POST" class="p-6 space-y-6">
                     @csrf
+                    @if ($errors->any())
+                        <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg text-sm">
+                            <ul class="list-disc pl-5">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Nome -->
                         <div class="md:col-span-2">
                             <label for="name" class="block text-sm font-medium text-slate-700 mb-1">Nome Completo</label>
-                            <input type="text" id="name" name="name" required placeholder="Ex: Maria da Silva" 
+                            <input type="text" id="name" name="name" value="{{ old('name') }}" required placeholder="Ex: Maria da Silva"  
                                 class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-800 text-sm">
                         </div>
                         
                         <!-- Email -->
                         <div class="md:col-span-1">
                             <label for="email" class="block text-sm font-medium text-slate-700 mb-1">E-mail corporativo</label>
-                            <input type="email" id="email" name="email" required placeholder="maria@estoque.com" 
+                            <input type="email" id="email" name="email" value="{{ old('email') }}" required placeholder="maria@estoque.com" 
                                 class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-slate-800 text-sm">
                         </div>
 

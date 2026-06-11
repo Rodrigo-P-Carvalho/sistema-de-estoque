@@ -4,51 +4,88 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Produto; 
+use App\Models\Veiculo;
+use Illuminate\Support\Facades\DB;
 
 class ProdutoController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Produto::query();
+        $query = Produto::with('veiculos');
 
-        // 1. Filtro de Busca (Nome, Cód Interno ou Cód Barras)
+        // 1. BUSCA PRINCIPAL (Ignora Maiúsculas, Minúsculas e Acentos no Postgres)
         if ($request->filled('busca')) {
-            $busca = $request->busca;
-            $query->where(function($q) use ($busca) {
-                $q->where('nome', 'like', "%{$busca}%")
-                ->orWhere('codigo_interno', 'like', "%{$busca}%")
-                ->orWhere('codigo_barras', 'like', "%{$busca}%");
+            $busca = $request->input('busca');
+            $termo = "%{$busca}%";
+            
+            $query->where(function($q) use ($termo) {
+                $q->whereRaw("unaccent(nome) ILIKE unaccent(?)", [$termo])
+                ->orWhereRaw("unaccent(codigo_interno) ILIKE unaccent(?)", [$termo])
+                ->orWhereRaw("unaccent(codigo_barras) ILIKE unaccent(?)", [$termo])
+                ->orWhereRaw("unaccent(marca) ILIKE unaccent(?)", [$termo]);
             });
         }
 
-        // 2. Filtro de Estoque Baixo
-        if ($request->has('estoque_baixo')) {
+        // 2. FILTRO POR APLICAÇÃO VEICULAR (Ignora Maiúsculas, Minúsculas e Acentos no Postgres)
+        if ($request->filled('aplicacao')) {
+            $aplicacao = $request->input('aplicacao');
+            $palavras = explode(' ', $aplicacao);
+
+            $query->whereHas('veiculos', function($q) use ($palavras) {
+                foreach ($palavras as $palavra) {
+                    $palavraLimpa = trim($palavra, '()');
+                    
+                    if (empty($palavraLimpa)) {
+                        continue;
+                    }
+
+                    $termoPalavra = "%{$palavraLimpa}%";
+
+                    $q->where(function($sub) use ($termoPalavra) {
+                        $sub->whereRaw("unaccent(marca) ILIKE unaccent(?)", [$termoPalavra])
+                            ->orWhereRaw("unaccent(modelo) ILIKE unaccent(?)", [$termoPalavra])
+                            ->orWhereRaw("unaccent(CAST(ano AS TEXT)) ILIKE unaccent(?)", [$termoPalavra]);
+                    });
+                }
+            });
+        }
+
+        // 3. Filtro de Estoque Crítico
+        if ($request->input('estoque_baixo') == '1') {
             $query->whereColumn('estoque', '<=', 'quantidade_minima');
         }
 
-        // Traz os resultados ordenados pelo nome e pagina de 10 em 10
-        $produtos = $query->orderBy('nome')->paginate(10);
+        $produtos = $query->paginate(10);
+        $todosVeiculos = Veiculo::all();
 
-        return view('produtos.index', compact('produtos'));
-
+        return view('produtos.index', compact('produtos', 'todosVeiculos'));
     }
+
     public function update(Request $request, $id)
-        {
+    {
         $produto = Produto::findOrFail($id);
         
         // Atualiza os dados liberados no $fillable (ou $guarded)
         $produto->update($request->all());
+        
+        // Atualiza as tags de veículos
+        $produto->veiculos()->sync($request->veiculos ?? []);
 
         return redirect()->back()->with('sucesso', 'Produto atualizado com sucesso!');
     }
+
     // Salva o novo produto no banco e recarrega a página
     public function store(Request $request)
     {
-        // Opcional: Se quiser adicionar validação de dados antes de salvar, coloque aqui.
-        
-        Produto::create($request->all());
+        // Cria a peça
+        $produto = Produto::create($request->all());
 
-        // Retorna para a mesma tela, recarregando os dados, e manda uma mensagem de sucesso invisível
+        // <-- CORREÇÃO 3: Sincroniza as tags de veículos na hora de criar a peça
+        if ($request->has('veiculos')) {
+            $produto->veiculos()->sync($request->veiculos);
+        }
+
+        // Retorna para a mesma tela, recarregando os dados, e manda uma mensagem de sucesso
         return redirect()->back()->with('sucesso', 'Nova peça cadastrada com sucesso!');
     }
-}
+}   
