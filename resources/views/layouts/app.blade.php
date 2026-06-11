@@ -8,7 +8,7 @@
 </head>
 <body class="bg-slate-100 flex h-screen overflow-hidden font-sans">
 
-    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col shadow-sm">
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col shadow-sm print:hidden">
         <div class="h-16 flex items-center px-6 border-b border-slate-200">
             <h1 class="text-2xl font-bold text-blue-600">Auto<span class="text-slate-800">Peças</span></h1>
         </div>
@@ -53,8 +53,8 @@
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
-        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm flex-shrink-0">
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto print:">
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm flex-shrink-0 print:hidden">
             <h2 class="text-xl font-semibold text-slate-800">
                 @yield('titulo_pagina', 'Visão Geral')
             </h2>

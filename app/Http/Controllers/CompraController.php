@@ -88,16 +88,9 @@ class CompraController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
-    // 3. API: Retorna a lista para o histórico
-    public function listarAPI()
-    {
-        // Join para buscar o nome do fornecedor junto
-        $compras = Compra::join('fornecedores', 'compras.fornecedor_id', '=', 'fornecedores.id')
-            ->select('compras.*', DB::raw('COALESCE(fornecedores.nome_fantasia, fornecedores.razao_social) as fornecedor_nome'))
-            ->orderBy('compras.id', 'desc')
-            ->get();
-
+    public function listarAPI() {
+        $compras = Compra::with(['fornecedor', 'itens.produto'])->orderBy('id', 'desc')->get();
+        
         return response()->json($compras);
     }
 }

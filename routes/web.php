@@ -86,10 +86,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/vendas', [VendaController::class, 'index']);
     Route::post('/api/vendas', [VendaController::class, 'store']);
     Route::post('/api/vendas/{id}/devolver', [VendaController::class, 'devolver']);
+
     //Compras
     Route::get('/compras', [CompraController::class, 'index'])->name('compras.index');
     Route::post('/compras', [CompraController::class, 'store'])->name('compras.store');
-    Route::get('/compras/listar', [CompraController::class, 'listarAPI']);
+    Route::get('/api/compras/listar', [CompraController::class, 'listarAPI']);
     // Rota de logout
     Route::post('/sair', [AuthController::class, 'sair'])->name('logout');
 
